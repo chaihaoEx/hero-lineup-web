@@ -44,7 +44,7 @@ vst2t.i7yun.top
 /var/www/hero-lineup-web-current -> /var/www/hero-lineup-web-releases/{commit-sha}/
 ```
 
-推荐配置：
+实际配置由 [`ops/nginx/hero-lineup-web.conf`](../ops/nginx/hero-lineup-web.conf) 版本化，并由部署流水线在发布前执行 `nginx -t` 后加载。关键路径配置如下：
 
 ```nginx
 server {
@@ -76,6 +76,28 @@ server {
         expires off;
         add_header Cache-Control "no-cache";
         try_files $uri =404;
+    }
+
+    location = /issues {
+        return 308 /issues/;
+    }
+
+    location = /issues/ {
+        return 302 /issues/chaihao/hero-lineup-feedback/issues;
+    }
+
+    location ^~ /issues/ {
+        client_max_body_size 64m;
+        proxy_pass http://127.0.0.1:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix /issues;
+        proxy_redirect off;
     }
 
     location / {

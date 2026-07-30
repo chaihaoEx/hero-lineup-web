@@ -73,6 +73,26 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/hero_lineup_deploy
           chmod 600 ~/.ssh/hero_lineup_deploy
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+      - name: Apply versioned Nginx configuration
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          scp -i ~/.ssh/hero_lineup_deploy ops/nginx/hero-lineup-web.conf \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/hero-lineup-web.conf"
+          ssh -i ~/.ssh/hero_lineup_deploy "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -e
+            target=/etc/nginx/sites-available/hero-lineup-web
+            backup=/etc/nginx/sites-available/hero-lineup-web.ci-backup
+            cp "$target" "$backup"
+            install -m 644 /tmp/hero-lineup-web.conf "$target"
+            if ! nginx -t; then
+              cp "$backup" "$target"
+              nginx -t
+              exit 1
+            fi
+            systemctl reload nginx
+          '
       - name: Upload immutable release
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
