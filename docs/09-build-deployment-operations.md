@@ -55,6 +55,29 @@ server {
     root /var/www/hero-lineup-web-current;
     index index.html;
 
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    location = /sw.js {
+        expires off;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        try_files $uri =404;
+    }
+
+    location = /manifest.webmanifest {
+        default_type application/manifest+json;
+        expires off;
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
+    location = /content/manifest.json {
+        expires off;
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }
@@ -69,9 +92,6 @@ server {
         add_header Cache-Control "public";
     }
 
-    location = /index.html {
-        add_header Cache-Control "no-cache";
-    }
 }
 ```
 
