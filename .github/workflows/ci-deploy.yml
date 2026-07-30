@@ -1,0 +1,85 @@
+name: Web CI and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hero-lineup-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run content:validate
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --project=chromium
+      - run: npm run test:pwa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hero-lineup-web-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://vst2t.i7yun.top
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Normalize static file permissions
+        run: chmod -R a+rX dist
+      - name: Configure deploy key
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/hero_lineup_deploy
+          chmod 600 ~/.ssh/hero_lineup_deploy
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+      - name: Upload immutable release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          release="/var/www/hero-lineup-web-releases/$RELEASE_SHA"
+          ssh -i ~/.ssh/hero_lineup_deploy "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$release'"
+          rsync -az --delete -e "ssh -i ~/.ssh/hero_lineup_deploy" dist/ "$DEPLOY_USER@$DEPLOY_HOST:$release/"
+          ssh -i ~/.ssh/hero_lineup_deploy "$DEPLOY_USER@$DEPLOY_HOST" "chmod -R a+rX '$release'"
+          ssh -i ~/.ssh/hero_lineup_deploy "$DEPLOY_USER@$DEPLOY_HOST" "ln -sfn '$release' /var/www/hero-lineup-web-current"
+      - name: Verify production
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/ >/dev/null
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/content/manifest.json |
+            node -e "let value=''; process.stdin.on('data', chunk => value += chunk); process.stdin.on('end', () => JSON.parse(value))"
