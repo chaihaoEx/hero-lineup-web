@@ -42,6 +42,7 @@ vst2t.i7yun.top
 ```text
 /var/www/hero-lineup-web-releases/{commit-sha}/
 /var/www/hero-lineup-web-current -> /var/www/hero-lineup-web-releases/{commit-sha}/
+/var/www/hero-lineup -> /var/www/hero-lineup-web-current
 ```
 
 实际配置由 [`ops/nginx/hero-lineup-web.conf`](../ops/nginx/hero-lineup-web.conf) 版本化，并由部署流水线在发布前执行 `nginx -t` 后加载。关键路径配置如下：
@@ -52,27 +53,36 @@ server {
     listen [::]:80;
     server_name vst2t.i7yun.top;
 
-    root /var/www/hero-lineup-web-current;
+    root /var/www;
     index index.html;
 
-    location = /index.html {
-        add_header Cache-Control "no-cache";
+    location = / {
+        return 302 /hero-lineup/;
     }
 
-    location = /sw.js {
+    location = /hero-lineup {
+        return 308 /hero-lineup/;
+    }
+
+    location = /hero-lineup/index.html {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
+    location = /hero-lineup/sw.js {
         expires off;
         add_header Cache-Control "no-cache, no-store, must-revalidate";
         try_files $uri =404;
     }
 
-    location = /manifest.webmanifest {
+    location = /hero-lineup/manifest.webmanifest {
         default_type application/manifest+json;
         expires off;
         add_header Cache-Control "no-cache";
         try_files $uri =404;
     }
 
-    location = /content/manifest.json {
+    location = /hero-lineup/content/manifest.json {
         expires off;
         add_header Cache-Control "no-cache";
         try_files $uri =404;
@@ -100,20 +110,25 @@ server {
         proxy_redirect off;
     }
 
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /assets/ {
+    location ^~ /hero-lineup/assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        try_files $uri =404;
     }
 
-    location /content/ {
-        expires 30d;
+    location ^~ /hero-lineup/content/ {
+        expires 1h;
         add_header Cache-Control "public";
+        try_files $uri =404;
     }
 
+    location ^~ /hero-lineup/ {
+        try_files $uri $uri/ /hero-lineup/index.html;
+    }
+
+    location / {
+        return 404;
+    }
 }
 ```
 

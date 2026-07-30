@@ -68,10 +68,10 @@ tests/App.test.tsx
 - Vitest：17 个测试文件、92 个测试通过。
 - Playwright：Chromium、Firefox、WebKit 共 72 个端到端测试通过。
 - PWA：首次缓存后，完全断网重新启动测试通过。
-- 根目录 `/` 和虚拟目录 `/hero-lineup/` 两种构建均通过。
+- 生产构建固定使用虚拟目录 `/hero-lineup/`，构建产物中的脚本、资源、manifest、Service Worker scope 和离线回退均经过子路径校验。
 - E2E 阻止远程请求，证明核心工作流不依赖外网接口。
 - GitHub Actions 在不安装 Rust 的 Ubuntu 环境完成校验、构建和部署。
-- `main` 构建上传到 commit SHA 版本目录，通过软链接原子发布到 `https://vst2t.i7yun.top/`。
+- `main` 构建上传到 commit SHA 版本目录，通过软链接原子发布到 `https://vst2t.i7yun.top/hero-lineup/`；`/issues/` 独立反向代理到 Gitea，根目录只负责跳转。
 
 本地完整门禁：
 
