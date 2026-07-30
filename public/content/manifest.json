@@ -2,7 +2,7 @@
   "appVersion": "0.1.0",
   "schemaVersion": 1,
   "gameDataVersion": "web-snapshot-2026-07-22",
-  "simulatorVersion": "hero-simulator-0.1.0",
+  "simulatorVersion": "hero-simulator-ts-1.0.0",
   "assetVersion": "sha256:277ddb3a0a163426ce0fdfe4487126e44926caeac7ed82a9b9f6e65b335ac983",
   "minimumAppVersion": "0.1.0",
   "createdAt": "2026-07-29T09:00:25.930950Z",
@@ -13756,12 +13756,12 @@
     {
       "path": "schemas/zyslineup.schema.json",
       "kind": "schema",
-      "size": 7536,
-      "sha256": "6bde2906801eb7d000ecb44e32a7ea21169359be727c67bd818d570bbde7a8b2"
+      "size": 7890,
+      "sha256": "c9c836585d9c19a52531920a434b5cfe896187dcec52c317712fd686614bf9c2"
     }
   ],
   "statistics": {
-    "bytes": 24313736,
+    "bytes": 24314090,
     "chestodds": 21,
     "classes": 42,
     "files": 2292,

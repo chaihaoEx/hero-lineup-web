@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { catalogChampions, championElementValue, makeDefaultSystem, makeHero, normalizeHeroEquipmentSlots, normalizeQuestPresentation, type Catalog, type CatalogQuest } from "../data/catalog";
 import { desktopBridge } from "../platform/bridge";
+import { SIMULATOR_VERSION } from "../core/simulationCore";
+import { subscribeRepositoryChanges } from "../storage/repository";
 import type { AdventureTask, ChampionLoadout, Hero, LineupSystem, PartyUnit, SimulationResult, TaskGroup } from "../types/domain";
 
 const clone = <T,>(value: T): T => structuredClone(value);
@@ -17,13 +19,39 @@ const barrierForQuest = (quest: CatalogQuest | undefined): AdventureTask["barrie
   return Object.fromEntries(elements.map((element) => [element, quest.barrierPower]));
 };
 
+function normalizeStoredSystem(system: LineupSystem, catalog: Catalog): LineupSystem {
+  const completeChampionIds = catalog.champions.map((champion) => champion.id);
+  return normalizeQuestPresentation({
+    ...system,
+    localPublic: system.localPublic ?? true,
+    heroes: system.heroes.map(normalizeHeroEquipmentSlots),
+    championIds: completeChampionIds,
+    taskGroups: system.taskGroups
+      .filter((group) => group.tasks.length > 0)
+      .map((group) => ({
+        ...group,
+        tasks: group.tasks.map((task) => task.result ? {
+          ...task,
+          result: {
+            ...task.result,
+            stale: task.result.gameDataVersion !== catalog.gameDataVersion
+              || task.result.simulatorVersion !== SIMULATOR_VERSION,
+          },
+        } : task),
+      })),
+  }, catalog);
+}
+
 export function useWorkspace(catalog: Catalog) {
   const [systems, setSystems] = useState<LineupSystem[]>([]);
   const [activeId, setActiveId] = useState("");
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    setError("");
+    setLoading(true);
     void desktopBridge.listSystems().then((loaded) => {
       const migrated = loaded.some((system) => system.heroes.some((hero) => hero.equipment.map((entry) => entry.slot).join(",") === "武器,头部,身体,手部,脚部,饰品"));
       const completeChampionIds = catalog.champions.map((champion) => champion.id);
@@ -32,19 +60,30 @@ export function useWorkspace(catalog: Catalog) {
       const emptyGroupMigrated = loaded.some((system) => system.taskGroups.some((group) => group.tasks.length === 0));
       const multipleChampionMigrated = loaded.some((system) => system.taskGroups.some((group) => group.tasks.some((task) =>
         task.memberIds.filter((id) => completeChampionIdSet.has(id)).length > 1)));
-      const initial = (loaded.length ? loaded : [makeDefaultSystem(catalog)]).map((system) => normalizeQuestPresentation({
-        ...system,
-        localPublic: system.localPublic ?? true,
-        heroes: system.heroes.map(normalizeHeroEquipmentSlots),
-        championIds: completeChampionIds,
-        taskGroups: system.taskGroups.filter((group) => group.tasks.length > 0),
-      }, catalog));
+      const versionMigrated = loaded.some((system) => system.taskGroups.some((group) => group.tasks.some((task) =>
+        task.result && (task.result.gameDataVersion !== catalog.gameDataVersion || task.result.simulatorVersion !== SIMULATOR_VERSION))));
+      const initial = (loaded.length ? loaded : [makeDefaultSystem(catalog)]).map((system) => normalizeStoredSystem(system, catalog));
       setSystems(initial);
       setActiveId(initial[0]!.id);
-      setDirty(!loaded.length || migrated || championRosterMigrated || emptyGroupMigrated || multipleChampionMigrated);
+      setDirty(!loaded.length || migrated || championRosterMigrated || emptyGroupMigrated || multipleChampionMigrated || versionMigrated);
+      setLoading(false);
+    }).catch((cause: unknown) => {
+      setError(cause instanceof Error ? cause.message : "本地数据库初始化失败");
       setLoading(false);
     });
   }, [catalog]);
+
+  useEffect(() => subscribeRepositoryChanges((change) => {
+    if (dirty || (change.entity !== "system" && change.entity !== "database")) return;
+    void desktopBridge.listSystems().then((loaded) => {
+      if (!loaded.length) return;
+      const synchronized = loaded.map((system) => normalizeStoredSystem(system, catalog));
+      setSystems(synchronized);
+      setActiveId((current) => synchronized.some((system) => system.id === current) ? current : synchronized[0]!.id);
+    }).catch((cause: unknown) => {
+      setError(cause instanceof Error ? cause.message : "本地数据库同步失败");
+    });
+  }), [catalog, dirty]);
 
   const active = useMemo(() => systems.find((system) => system.id === activeId) ?? systems[0], [activeId, systems]);
 
@@ -286,7 +325,7 @@ export function useWorkspace(catalog: Catalog) {
     : [], [active, catalog]);
 
   return {
-    systems, setSystems, active, activeId, setActiveId, dirty, setDirty, loading, updateActive, save,
+    systems, setSystems, active, activeId, setActiveId, dirty, setDirty, loading, error, updateActive, save,
     createSystem, importSystem, duplicateSystem, deleteSystem, addHero, updateHero, updateChampionLoadout, deleteHero, duplicateHero,
     toggleChampion, addGroup, moveGroup, updateGroup, deleteGroup, addTask, duplicateTask, deleteTask, moveTask,
     dropUnit, removeUnit, setTaskResult, updateTask, replaceActive, units,

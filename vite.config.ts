@@ -2,7 +2,11 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
+const requestedBase = process.env.VITE_BASE_PATH ?? "/";
+const base = requestedBase === "/" ? "/" : `/${requestedBase.replace(/^\/+|\/+$/g, "")}/`;
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -15,14 +19,14 @@ export default defineConfig({
         theme_color: "#4436b5",
         background_color: "#f7f5ef",
         display: "standalone",
-        start_url: "/",
-        icons: [{ src: "/app-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
+        start_url: base,
+        icons: [{ src: "app-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
       },
       workbox: {
         globPatterns: ["**/*.{html,js,css,svg,png,jpg,jpeg,webp,json,woff,woff2}"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         cleanupOutdatedCaches: true,
-        navigateFallback: "/index.html",
+        navigateFallback: `${base}index.html`,
       },
     }),
   ],
@@ -36,7 +40,7 @@ export default defineConfig({
   build: {
     target: "es2021",
     minify: "esbuild",
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {

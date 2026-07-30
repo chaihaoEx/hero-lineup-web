@@ -42,4 +42,39 @@ describe("canonical desktop adapter", () => {
     };
     expect(fromCanonicalSystem(toCanonicalSystem(original)).championLoadouts.argon).toEqual(original.championLoadouts.argon);
   });
+
+  it("normalizes Rust null defaults and preserves ungrouped desktop tasks", () => {
+    const original = makeDefaultSystem(previewCatalog);
+    const hero = makeHero(previewCatalog, "knight", 1);
+    original.heroes = [hero];
+    original.taskGroups = [{
+      id: crypto.randomUUID(),
+      name: "旧桌面任务",
+      tasks: [{
+        id: crypto.randomUUID(), questId: "forest01", name: "森林", map: "森林", difficulty: "简单",
+        maxMembers: 4, memberIds: [hero.id], barrier: {},
+        config: { iterations: 10000, seed: 42, booster: false, elite: false, titanTower: false },
+      }],
+    }];
+    const canonical = toCanonicalSystem(original);
+    canonical.heroes[0]!.spritePath = null;
+    canonical.heroes[0]!.equipment[0]!.name = null;
+    canonical.heroes[0]!.equipment[0]!.element = null;
+    canonical.heroes[0]!.equipment[0]!.spirit = null;
+    canonical.champions[0]!.classId = null;
+    canonical.champions[0]!.spritePath = null;
+    canonical.champions[0]!.familiar = null;
+    canonical.champions[0]!.auraSong = null;
+    canonical.adventureTasks[0]!.groupId = null;
+    canonical.adventureTasks[0]!.result = null;
+    canonical.groups = [];
+
+    const restored = fromCanonicalSystem(canonical);
+    expect(restored.heroes[0]).not.toHaveProperty("spritePath");
+    expect(restored.heroes[0]!.equipment[0]).not.toHaveProperty("name");
+    expect(restored.heroes[0]!.equipment[0]).not.toHaveProperty("element");
+    expect(restored.taskGroups).toHaveLength(1);
+    expect(restored.taskGroups[0]!.name).toBe("未分组任务");
+    expect(restored.taskGroups[0]!.tasks[0]).not.toHaveProperty("result");
+  });
 });

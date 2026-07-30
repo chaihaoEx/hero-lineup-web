@@ -1730,6 +1730,7 @@ function WorkspaceApp({ catalog, onCatalogChange }: { catalog: Catalog; onCatalo
     setTemplates((current) => current.filter((template) => template.id !== id));
   };
 
+  if (workspace.error) return <main className="loading-screen" role="alert"><HardDrive size={24} /><span>本地数据库加载失败：{workspace.error}</span><small>请确认浏览器允许本站使用本地存储，然后刷新页面重试。</small></main>;
   if (workspace.loading || !workspace.active) return <main className="loading-screen"><div className="loader" /><span>正在加载本地数据…</span></main>;
 
   return <div className="app-shell online-shell">

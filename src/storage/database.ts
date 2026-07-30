@@ -87,3 +87,9 @@ export async function resetDatabaseForTests(): Promise<void> {
   ready = undefined;
   await database.open();
 }
+
+export async function reopenDatabaseForTests(): Promise<void> {
+  database.close();
+  ready = undefined;
+  await database.open();
+}

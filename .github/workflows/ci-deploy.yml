@@ -30,8 +30,14 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e -- --project=chromium
+      - name: Verify optional subpath deployment
+        env:
+          VITE_BASE_PATH: /hero-lineup/
+        run: |
+          npx vite build --outDir dist-subpath --emptyOutDir
+          node tools/validate-subpath-build.mjs dist-subpath /hero-lineup/
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e
       - run: npm run test:pwa
       - uses: actions/upload-artifact@v4
         with:

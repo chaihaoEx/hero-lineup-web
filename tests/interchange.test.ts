@@ -34,6 +34,15 @@ describe("portable interchange", () => {
     await expect(decodeLineup(JSON.stringify(envelope))).rejects.toThrow("checksum 校验失败");
   });
 
+  it("rejects structurally invalid lineup JSON before accepting its checksum", async () => {
+    const system = makeDefaultSystem(previewCatalog);
+    const encoded = await encodeLineup(toCanonicalSystem(system), webVersions(system.gameDataVersion));
+    const envelope = JSON.parse(encoded) as { payload: { name: string } };
+    envelope.payload.name = "";
+
+    await expect(decodeLineup(JSON.stringify(envelope))).rejects.toThrow("schema 校验失败");
+  });
+
   it("round-trips backup content and replaces IndexedDB in one operation", async () => {
     const oldSystem = makeDefaultSystem(previewCatalog);
     await saveSystem(oldSystem);

@@ -226,27 +226,27 @@ export interface CanonicalVersions {
 }
 
 export interface CanonicalEquipment {
-  itemId: string; name?: string | undefined; slot: "weapon" | "head" | "body" | "hands" | "feet" | "accessory" | "familiar" | "auraSong";
-  quality: "normal" | "superior" | "flawless" | "epic" | "legendary"; element?: string | undefined; spirit?: string | undefined;
+  itemId: string; name?: string | null | undefined; slot: "weapon" | "head" | "body" | "hands" | "feet" | "accessory" | "familiar" | "auraSong";
+  quality: "normal" | "superior" | "flawless" | "epic" | "legendary"; element?: string | null | undefined; spirit?: string | null | undefined;
   shiny: boolean; transcended: boolean; transcendence: number;
 }
 
 export interface CanonicalHero {
   id: string; classId: string; name: string; level: number; rank: number; seed: number; cardLevel: number;
-  className: string; spritePath?: string | undefined; element: string; stats: UnitStats; titan: boolean;
+  className: string; spritePath?: string | null | undefined; element: string; stats: UnitStats; titan: boolean;
   seedPoints: Record<string, number>; equipment: CanonicalEquipment[]; skillIds: string[]; cardLevels: Record<string, number>;
 }
 
 export interface CanonicalChampion {
-  id: string; loadoutPresent: boolean; name: string; classId?: string | undefined; spritePath?: string | undefined; element: string; level: number; rank: number;
+  id: string; loadoutPresent: boolean; name: string; classId?: string | null | undefined; spritePath?: string | null | undefined; element: string; level: number; rank: number;
   seed: number; cardLevel: number; titan: boolean; familiarId: string; auraSongId: string; stats: UnitStats;
-  cardLevels: Record<string, number>; familiar?: CanonicalEquipment | undefined; auraSong?: CanonicalEquipment | undefined;
+  cardLevels: Record<string, number>; familiar?: CanonicalEquipment | null | undefined; auraSong?: CanonicalEquipment | null | undefined;
 }
 
 export interface CanonicalTask {
-  id: string; questId: string; name: string; map: string; groupId?: string | undefined; heroIds: string[]; championIds: string[];
+  id: string; questId: string; name: string; map: string; groupId?: string | null | undefined; heroIds: string[]; championIds: string[];
   difficulty: number; maxMembers: number; barrier: Record<string, number>; config: SimulationConfig;
-  result?: SimulationResult | undefined; modifiers: string[]; simulation?: Record<string, unknown> | undefined;
+  result?: SimulationResult | null | undefined; modifiers: string[]; simulation?: Record<string, unknown> | null | undefined;
 }
 
 export interface CanonicalSystem {

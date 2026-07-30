@@ -1,8 +1,10 @@
 node_modules/
 dist/
+dist-subpath/
 coverage/
 playwright-report/
 test-results/
+graphify-out/
 .vite/
 .env
 .env.*

@@ -37,10 +37,11 @@ VITE_APP_VERSION
 vst2t.i7yun.top
 ```
 
-当前服务器目录：
+当前生产发布目录：
 
 ```text
-/var/www/hero-lineup-web
+/var/www/hero-lineup-web-releases/{commit-sha}/
+/var/www/hero-lineup-web-current -> /var/www/hero-lineup-web-releases/{commit-sha}/
 ```
 
 推荐配置：
@@ -51,7 +52,7 @@ server {
     listen [::]:80;
     server_name vst2t.i7yun.top;
 
-    root /var/www/hero-lineup-web;
+    root /var/www/hero-lineup-web-current;
     index index.html;
 
     location / {
@@ -92,11 +93,11 @@ certbot --nginx -d vst2t.i7yun.top
 
 ## 5. 发布方式
 
-建议采用版本目录和原子切换：
+当前 GitHub Actions 采用版本目录和原子切换：
 
 ```text
-/var/www/hero-lineup-web/releases/{commit-sha}/
-/var/www/hero-lineup-web/current -> releases/{commit-sha}/
+/var/www/hero-lineup-web-releases/{commit-sha}/
+/var/www/hero-lineup-web-current -> /var/www/hero-lineup-web-releases/{commit-sha}/
 ```
 
 发布流程：
@@ -114,13 +115,11 @@ certbot --nginx -d vst2t.i7yun.top
 
 ## 6. GitHub Actions
 
-流水线应分为：
+流水线包含：
 
-- `quality`：类型、lint、单元测试。
-- `e2e`：Playwright。
-- `build`：生成静态制品。
-- `deploy`：仅 main 或 tag 部署。
-- `smoke`：部署后访问验证。
+- `verify`：内容校验、类型、lint、单元测试、三浏览器 E2E、PWA 离线测试、根目录构建和虚拟目录构建。
+- `deploy`：仅 `main` 部署，上传不可变版本目录并原子切换软链接。
+- 部署后检查首页与 `content/manifest.json`。
 
 部署凭据必须放在 GitHub Actions Secrets，不能写入仓库。
 
@@ -136,6 +135,8 @@ certbot --nginx -d vst2t.i7yun.top
 - 首页和 manifest 可用性。
 
 如不希望收集用户行为，不加入第三方分析脚本。
+
+问题反馈入口可以反向代理到同机 Gitea 的 `/issues/`。这是可选的独立服务，不属于应用运行依赖；Gitea 不可用时，配装、计算、存储、导入导出和离线启动仍须全部正常。
 
 ## 8. 验收条件
 

@@ -1,0 +1,77 @@
+{
+  "source": {
+    "kind": "rust-golden",
+    "origin": "hero-simulator::simulate_advanced_with_retry"
+  },
+  "fixture": {
+    "base": "advanced-combat-rules.json",
+    "enemyHealth": 2000,
+    "booster": {
+      "attack": 0.4,
+      "defense": 0.4,
+      "critical": 0.15,
+      "criticalDamage": 0
+    },
+    "retryAdds": {
+      "attack": 0.2,
+      "defense": 0.2,
+      "critical": 0.1,
+      "criticalDamage": 0
+    }
+  },
+  "expected": {
+    "successRate": 97.0703125,
+    "first": {
+      "iterations": 512,
+      "successRate": 57.6171875,
+      "averageTurns": 13.813559322033898,
+      "minTurns": 11,
+      "maxTurns": 16,
+      "memberResults": [
+        {
+          "id": "protector",
+          "survivalRate": 42.96875,
+          "averageDamage": 763.1268749999999,
+          "averageRemainingHealth": 13.240234375
+        },
+        {
+          "id": "focused",
+          "survivalRate": 59.375,
+          "averageDamage": 1154.4859374999992,
+          "averageRemainingHealth": 27.779296875
+        }
+      ]
+    },
+    "second": {
+      "iterations": 217,
+      "successRate": 93.08755760368663,
+      "averageTurns": 11.871287128712872,
+      "minTurns": 9,
+      "maxTurns": 15,
+      "memberResults": [
+        {
+          "id": "protector",
+          "survivalRate": 79.72350230414746,
+          "averageDamage": 852.1791705069123,
+          "averageRemainingHealth": 45.46082949308756
+        },
+        {
+          "id": "focused",
+          "survivalRate": 91.70506912442397,
+          "averageDamage": 1228.6623655913972,
+          "averageRemainingHealth": 54.57142857142857
+        }
+      ]
+    },
+    "overallMemberResults": [
+      {
+        "id": "protector",
+        "survivalRate": 75.9765625
+      },
+      {
+        "id": "focused",
+        "survivalRate": 95.703125
+      }
+    ]
+  }
+}

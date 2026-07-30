@@ -119,11 +119,15 @@ test.describe("浏览器预览中的主要离线工作流", () => {
     await expect(task.locator(".task-member-element-badge")).toHaveCount(2);
 
     await task.getByRole("button", { name: "测试冒险" }).click();
-    await expect(task.getByText(/模拟中 \d+%/)).toBeVisible();
+    const firstProgress = task.getByText(/模拟中 \d+%/);
+    await expect(firstProgress).toBeVisible();
+    await expect(firstProgress).toBeHidden({ timeout: 20_000 });
     await expect(task.getByText(/成功率: \d+\.\d{3}%/)).toBeVisible();
 
     await task.getByRole("button", { name: "测试冒险" }).click();
-    await expect(task.getByText(/模拟中 \d+%/)).toBeVisible();
+    const secondProgress = task.getByText(/模拟中 \d+%/);
+    await expect(secondProgress).toBeVisible();
+    await expect(secondProgress).toBeHidden({ timeout: 20_000 });
     await expect(task.getByText(/成功率: \d+\.\d{3}%/)).toBeVisible();
     await task.getByRole("button", { name: "查看详情" }).click();
     await expect(task.getByText("hero-simulator-ts-1.0.0")).toBeVisible();

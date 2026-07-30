@@ -2,8 +2,10 @@ import type { AdventureTask, PartyUnit, SimulationAttemptResult, SimulationResul
 import type { CatalogQuest, CatalogSimulationModifier } from "../data/catalog";
 import { ChaCha8Rng } from "./chacha8";
 
+export const SIMULATOR_VERSION = "hero-simulator-ts-1.0.0";
+
 export interface SimulationWorkerInput {
-  task: AdventureTask & { gameDataVersion?: string };
+  task: AdventureTask;
   units: Array<PartyUnit & { classType?: string; allElements?: boolean }>;
   quest?: CatalogQuest;
   modifiers: Record<string, CatalogSimulationModifier>;
@@ -62,6 +64,8 @@ export interface AdvancedSimulationFixture {
 
 interface PreparedSimulation {
   fighters: Fighter[];
+  preBoosterFighters: Fighter[];
+  boosterBonus: BoosterBonus;
   enemy: Enemy;
   partyDamageMultiplier: number;
   rules: AdvancedCombatRuleSet;
@@ -103,6 +107,22 @@ const booster = [
   { attack: 0.4, defense: 0.4, critical: 0.15, criticalDamage: 0 },
   { attack: 0.8, defense: 0.8, critical: 0.3, criticalDamage: 0.5 },
 ];
+type BoosterBonus = (typeof booster)[number];
+
+const cloneFighter = (fighter: Fighter): Fighter => ({
+  ...fighter,
+  timedEvasion: fighter.timedEvasion.map((entry) => ({ ...entry })),
+});
+
+function applyBoosterToFighter(fighter: Fighter, bonus: BoosterBonus): Fighter {
+  return {
+    ...cloneFighter(fighter),
+    attack: Math.round(fighter.attack * (1 + bonus.attack)),
+    defense: Math.round(fighter.defense * (1 + bonus.defense)),
+    critical: clamp(fighter.critical + bonus.critical, 0, 1),
+    criticalDamage: Math.max(1, fighter.criticalDamage + bonus.criticalDamage),
+  };
+}
 
 function titanBonuses(floorValue: number, reductionValue: number) {
   const floor = clamp(Math.round(floorValue), 1, 500);
@@ -263,12 +283,8 @@ function prepare(input: SimulationWorkerInput): PreparedSimulation {
     if (fighter.threat > 0) fighter.threat *= 1 + Math.max(0, threatDelta);
   }
 
-  for (const fighter of fighters) {
-    fighter.attack = Math.round(fighter.attack * (1 + boost.attack));
-    fighter.defense = Math.round(fighter.defense * (1 + boost.defense));
-    fighter.critical = clamp(fighter.critical + boost.critical, 0, 1);
-    fighter.criticalDamage = Math.max(1, fighter.criticalDamage + boost.criticalDamage);
-  }
+  const preBoosterFighters = fighters.map(cloneFighter);
+  fighters.splice(0, fighters.length, ...preBoosterFighters.map((fighter) => applyBoosterToFighter(fighter, boost)));
   enemy.health = Math.round(enemy.health * Math.max(0, 1 + environment.health));
   enemy.attack = Math.round(enemy.attack * Math.max(0, 1 + environment.attack));
   enemy.evasion = clamp(enemy.evasion + environment.evasion, 0, 0.75);
@@ -298,6 +314,8 @@ function prepare(input: SimulationWorkerInput): PreparedSimulation {
   const hasChronomancer = fighters.some((fighter) => fighter.classId === "chronomancer");
   return {
     fighters,
+    preBoosterFighters,
+    boosterBonus: boost,
     enemy,
     partyDamageMultiplier: barrierMultiplier(task, fighters),
     rules,
@@ -467,15 +485,14 @@ function finishAttempt(accumulator: AttemptAccumulator, fighters: Fighter[]): Si
 
 function withTimekeeperBooster(prepared: PreparedSimulation): PreparedSimulation {
   const minimum = booster[1]!;
-  const fighters = prepared.fighters.map((fighter) => ({
-    ...fighter,
-    timedEvasion: fighter.timedEvasion.map((entry) => ({ ...entry })),
-    attack: Math.round(fighter.attack * (1 + minimum.attack)),
-    defense: Math.round(fighter.defense * (1 + minimum.defense)),
-    critical: clamp(fighter.critical + minimum.critical, 0, 1),
-    criticalDamage: Math.max(1, fighter.criticalDamage + minimum.criticalDamage),
-  }));
-  return { ...prepared, fighters };
+  const combined: BoosterBonus = {
+    attack: prepared.boosterBonus.attack + minimum.attack,
+    defense: prepared.boosterBonus.defense + minimum.defense,
+    critical: prepared.boosterBonus.critical + minimum.critical,
+    criticalDamage: prepared.boosterBonus.criticalDamage + minimum.criticalDamage,
+  };
+  const fighters = prepared.preBoosterFighters.map((fighter) => applyBoosterToFighter(fighter, combined));
+  return { ...prepared, fighters, boosterBonus: combined };
 }
 
 function execute(
@@ -535,6 +552,8 @@ export function runAdvancedSimulationFixture(fixture: AdvancedSimulationFixture)
   }));
   const prepared: PreparedSimulation = {
     fighters,
+    preBoosterFighters: fighters.map(cloneFighter),
+    boosterBonus: booster[0]!,
     enemy: { ...fixture.enemy, baseCritical: fixture.enemy.baseCritical ?? fixture.enemy.critical },
     partyDamageMultiplier: fixture.partyDamageMultiplier ?? 1,
     rules: fixture.rules ?? {},
@@ -543,6 +562,33 @@ export function runAdvancedSimulationFixture(fixture: AdvancedSimulationFixture)
     iterations: fixture.iterations,
   };
   return execute(prepared).first;
+}
+
+export function runAdvancedRetryFixture(
+  fixture: AdvancedSimulationFixture,
+  currentBooster: BoosterBonus,
+): ReturnType<typeof execute> {
+  const preBoosterFighters: Fighter[] = fixture.fighters.map((fighter) => ({
+    ...fighter,
+    element: "光",
+    elementPower: 0,
+    threat: fighter.threat ?? 1,
+    regeneration: fighter.regeneration ?? 0,
+    allElements: false,
+    timedEvasion: [],
+  }));
+  const prepared: PreparedSimulation = {
+    fighters: preBoosterFighters.map((fighter) => applyBoosterToFighter(fighter, currentBooster)),
+    preBoosterFighters,
+    boosterBonus: currentBooster,
+    enemy: { ...fixture.enemy, baseCritical: fixture.enemy.baseCritical ?? fixture.enemy.critical },
+    partyDamageMultiplier: fixture.partyDamageMultiplier ?? 1,
+    rules: fixture.rules ?? {},
+    retry: "timekeeper",
+    seed: fixture.seed,
+    iterations: fixture.iterations,
+  };
+  return execute(prepared);
 }
 
 export function runSimulation(
@@ -572,7 +618,7 @@ export function runSimulation(
     firstAttempt: first,
     ...(attempts.second ? { secondAttempt: attempts.second, hasSecondAttempt: true } : { hasSecondAttempt: false }),
     ...(prepared.retry !== "none" ? { overallMemberResults: attempts.overallMemberResults } : {}),
-    simulatorVersion: "hero-simulator-ts-1.0.0",
+    simulatorVersion: SIMULATOR_VERSION,
     gameDataVersion: input.task.gameDataVersion ?? "unknown",
     completedAt: new Date().toISOString(),
     stale: false,

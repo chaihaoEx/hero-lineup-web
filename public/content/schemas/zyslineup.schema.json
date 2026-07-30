@@ -40,6 +40,14 @@
         "groups": { "type": "array", "items": { "$ref": "#/$defs/group" } },
         "heroes": { "type": "array", "items": { "$ref": "#/$defs/hero" } },
         "champions": { "type": "array", "items": { "$ref": "#/$defs/champion" } },
+        "equipmentOwnedCounts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hero": { "type": "object", "additionalProperties": { "type": ["number", "string"] } },
+            "champion": { "type": "object", "additionalProperties": { "type": ["number", "string"] } }
+          }
+        },
         "adventureTasks": { "type": "array", "items": { "$ref": "#/$defs/task" } },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
@@ -103,7 +111,7 @@
       }
     },
     "simulationConfig": {
-      "type": "object", "additionalProperties": false,
+      "type": "object", "additionalProperties": true,
       "required": ["iterations", "seed", "booster", "elite", "titanTower"],
       "properties": { "iterations": { "type": "integer", "minimum": 1 }, "seed": { "type": "integer", "minimum": 0 }, "booster": { "type": "boolean" }, "elite": { "type": "boolean" }, "titanTower": { "type": "boolean" } }
     }

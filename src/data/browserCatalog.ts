@@ -8,7 +8,9 @@ import type { ElementType, UnitStats } from "../types/domain";
 
 type Raw = Record<string, unknown>;
 
-const CONTENT_ROOT = "/content";
+const CONTENT_ROOT = `${import.meta.env.BASE_URL}content`.replace(/\/+$/, "");
+const APP_VERSION = "0.1.0";
+const SUPPORTED_CONTENT_SCHEMA = 1;
 const classOrder = [
   "soldier", "mercenary", "barbarian", "chieftain", "knight", "lord",
   "ranger", "warden", "swordmaster", "daimyo", "berserker", "jarl",
@@ -38,6 +40,16 @@ const elementColor = (value: ElementType): string => ({
   火: "#e96362", 水: "#4594dc", 土: "#9a7a52", 风: "#3fa982", 暗: "#7759c6", 光: "#f4b942",
 })[value];
 const compact = (value: number): string => Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+const compareVersions = (left: string, right: string): number => {
+  const parts = (value: string) => value.split(".").map((entry) => Number(entry.match(/^\d+/)?.[0] ?? 0));
+  const leftParts = parts(left);
+  const rightParts = parts(right);
+  for (let index = 0; index < Math.max(leftParts.length, rightParts.length); index += 1) {
+    const difference = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
+    if (difference) return difference;
+  }
+  return 0;
+};
 const stats = (value: Raw): UnitStats => ({
   attack: Math.round(Math.max(numeric(value, "maxAtk40"), numeric(value, "maxAtk"))),
   defense: Math.round(Math.max(numeric(value, "maxDef40"), numeric(value, "maxDef"))),
@@ -156,6 +168,15 @@ export async function loadBrowserCatalog(): Promise<Catalog> {
     fetchJson<Raw>("TextAsset/items_type_dict.json"),
     fetchJson<{ texts: Record<string, string> }>("TextAsset/texts_zh.json"),
   ]);
+  const schemaVersion = numeric(manifest, "schemaVersion");
+  if (schemaVersion !== SUPPORTED_CONTENT_SCHEMA) {
+    throw new Error(`不支持的本地数据 schema：${schemaVersion}，当前仅支持 ${SUPPORTED_CONTENT_SCHEMA}`);
+  }
+  const minimumAppVersion = asText(manifest.minimumAppVersion);
+  if (!minimumAppVersion || compareVersions(APP_VERSION, minimumAppVersion) < 0) {
+    throw new Error(`本地数据要求应用版本 ${minimumAppVersion || "<missing>"}，当前版本为 ${APP_VERSION}`);
+  }
+  if (!asText(manifest.gameDataVersion)) throw new Error("本地数据清单缺少 gameDataVersion");
   const texts = textFile.texts;
   const localized = (keys: string[], fallback: string): string => keys.map((key) => texts[key]).find((entry): entry is string => typeof entry === "string") ?? fallback;
   const spriteFiles = Array.isArray(manifest.files)
@@ -381,8 +402,20 @@ export async function loadBrowserCatalog(): Promise<Catalog> {
     }];
   });
   const statistics = asRecord(manifest.statistics);
+  const expectedCounts = {
+    classes: numeric(statistics, "classes"),
+    quests: numeric(statistics, "quests"),
+    items: numeric(statistics, "items"),
+    skills: numeric(statistics, "skills"),
+  };
+  const actualCounts = { classes: classes.length, quests: quests.length, items: items.length, skills: skills.length };
+  for (const key of Object.keys(expectedCounts) as Array<keyof typeof expectedCounts>) {
+    if (expectedCounts[key] <= 0 || expectedCounts[key] !== actualCounts[key]) {
+      throw new Error(`本地数据数量不一致：${key} 期望 ${expectedCounts[key]}，实际 ${actualCounts[key]}`);
+    }
+  }
   return {
-    schemaVersion: numeric(manifest, "schemaVersion") || 1,
+    schemaVersion,
     gameDataVersion: asText(manifest.gameDataVersion, "bundled"),
     assetVersion: asText(manifest.assetVersion, "bundled"),
     classes,

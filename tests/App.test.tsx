@@ -3,10 +3,12 @@ import userEvent from "@testing-library/user-event";
 import App from "../src/App";
 import { makeDefaultSystem, makeHero, previewCatalog } from "../src/data/catalog";
 import { decodeOnlineHeroConfig } from "../src/data/heroCreationTemplates";
-import { desktopBridge } from "../src/platform/bridge";
+import { desktopBridge, setBridgeCatalogForTests } from "../src/platform/bridge";
 import { listSystems as listStoredSystems, listTemplates as listStoredTemplates } from "../src/storage/repository";
 
 beforeEach(() => {
+  setBridgeCatalogForTests(previewCatalog);
+  vi.spyOn(desktopBridge, "loadCatalog").mockResolvedValue(previewCatalog);
   localStorage.clear();
   const system = makeDefaultSystem(previewCatalog);
   const hero = makeHero(previewCatalog, "knight", 1);
@@ -24,6 +26,15 @@ afterEach(() => vi.restoreAllMocks());
 async function appReady() {
   await screen.findByText("默认体系", { selector: ".online-system-card > strong" });
 }
+
+test("shows a recoverable error instead of hanging when IndexedDB initialization fails", async () => {
+  vi.spyOn(desktopBridge, "listSystems").mockRejectedValueOnce(new Error("IndexedDB permission denied"));
+  render(<App />);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("本地数据库加载失败：IndexedDB permission denied");
+  expect(screen.getByText(/允许本站使用本地存储/)).toBeInTheDocument();
+  expect(document.querySelector(".loader")).not.toBeInTheDocument();
+});
 
 test("renders online-style roster element badges and sorts same-class heroes by name", async () => {
   const systems = JSON.parse(localStorage.getItem("zys.hero-lineup.systems.v1")!) as ReturnType<typeof makeDefaultSystem>[];

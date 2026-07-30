@@ -6,6 +6,36 @@ import {
   type SimulationHistoryRecord,
 } from "./database";
 
+export type RepositoryChange = {
+  entity: "system" | "template" | "database";
+  action: "save" | "delete" | "replace";
+  id?: string;
+  at: string;
+};
+
+const CHANGE_CHANNEL = "hero-lineup-web:repository";
+const CHANGE_EVENT = "hero-lineup-web:repository-change";
+const channel = typeof window === "undefined" || typeof window.BroadcastChannel === "undefined"
+  ? undefined
+  : new window.BroadcastChannel(CHANGE_CHANNEL);
+
+function publish(change: Omit<RepositoryChange, "at">): void {
+  const message: RepositoryChange = { ...change, at: new Date().toISOString() };
+  channel?.postMessage(message);
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent<RepositoryChange>(CHANGE_EVENT, { detail: message }));
+}
+
+export function subscribeRepositoryChanges(listener: (change: RepositoryChange) => void): () => void {
+  const onMessage = (event: MessageEvent<RepositoryChange>) => listener(event.data);
+  const onLocal = (event: Event) => listener((event as CustomEvent<RepositoryChange>).detail);
+  channel?.addEventListener("message", onMessage);
+  if (typeof window !== "undefined") window.addEventListener(CHANGE_EVENT, onLocal);
+  return () => {
+    channel?.removeEventListener("message", onMessage);
+    if (typeof window !== "undefined") window.removeEventListener(CHANGE_EVENT, onLocal);
+  };
+}
+
 export async function listSystems(): Promise<LineupSystem[]> {
   await ensureDatabaseReady();
   return database.systems.orderBy("updatedAt").reverse().toArray();
@@ -14,6 +44,7 @@ export async function listSystems(): Promise<LineupSystem[]> {
 export async function saveSystem(system: LineupSystem): Promise<LineupSystem> {
   await ensureDatabaseReady();
   await database.systems.put(structuredClone(system));
+  publish({ entity: "system", action: "save", id: system.id });
   return system;
 }
 
@@ -23,6 +54,7 @@ export async function deleteSystem(id: string): Promise<void> {
     await database.systems.delete(id);
     await database.simulationHistory.where("systemId").equals(id).delete();
   });
+  publish({ entity: "system", action: "delete", id });
 }
 
 export async function listTemplates(): Promise<BuildTemplate[]> {
@@ -33,12 +65,14 @@ export async function listTemplates(): Promise<BuildTemplate[]> {
 export async function saveTemplate(template: BuildTemplate): Promise<BuildTemplate> {
   await ensureDatabaseReady();
   await database.templates.put(structuredClone(template));
+  publish({ entity: "template", action: "save", id: template.id });
   return template;
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
   await ensureDatabaseReady();
   await database.templates.delete(id);
+  publish({ entity: "template", action: "delete", id });
 }
 
 export async function listSettings(): Promise<Record<string, unknown>> {
@@ -106,4 +140,5 @@ export async function replaceDatabase(backup: DatabaseBackup): Promise<void> {
       if (settings.length) await database.settings.bulkAdd(settings);
     },
   );
+  publish({ entity: "database", action: "replace" });
 }

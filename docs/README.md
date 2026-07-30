@@ -23,6 +23,7 @@
 8. [测试与一致性验收](./08-testing-and-parity.md)
 9. [构建、Nginx 与运维](./09-build-deployment-operations.md)
 10. [分阶段实施路线](./10-implementation-roadmap.md)
+11. [完成度审计与验收证据](./11-completion-audit.md)
 
 ## 核心决策
 
