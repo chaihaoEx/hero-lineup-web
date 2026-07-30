@@ -1783,6 +1783,7 @@ function WorkspaceApp({ catalog, onCatalogChange }: { catalog: Catalog; onCatalo
     />}
     {showClassPicker && <ClassPickerModal catalog={catalog} heroIndex={workspace.active.heroes.length + 1} onClose={() => setShowClassPicker(false)} onChoose={(hero) => { workspace.addHero(hero.classId, hero); setShowClassPicker(false); }} />}
     {exportingSystem && <SystemExportModal system={exportingSystem} onClose={() => setExportingSystem(null)} onCopy={() => void copySystemConfig(exportingSystem)} />}
+    <a className="feedback-link" href="/issues/chaihao/hero-lineup-feedback/issues/new" target="_blank" rel="noreferrer">问题反馈</a>
     {toast && <button className="toast" onClick={() => setToast("")}><Check size={16} />{toast}<X size={14} /></button>}
   </div>;
 }

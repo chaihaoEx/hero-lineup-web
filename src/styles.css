@@ -2046,3 +2046,23 @@ body {
 .champion-picker-backdrop .equipment-picker-columns > section {
   min-width:0;
 }
+
+.feedback-link {
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  z-index:80;
+  padding:10px 16px;
+  color:#fff;
+  font-size:13px;
+  font-weight:800;
+  text-decoration:none;
+  border-radius:999px;
+  background:#5145cd;
+  box-shadow:0 8px 24px rgb(67 56 177 / .28);
+}
+.feedback-link:hover {
+  color:#fff;
+  background:#4034b7;
+  transform:translateY(-1px);
+}
