@@ -69,6 +69,7 @@ tests/App.test.tsx
 - Playwright：Chromium、Firefox、WebKit 共 72 个端到端测试通过。
 - PWA：首次缓存后，完全断网重新启动测试通过。
 - 生产构建固定使用虚拟目录 `/hero-lineup/`，构建产物中的脚本、资源、manifest、Service Worker scope 和离线回退均经过子路径校验。
+- 根路径 `/sw.js` 只提供旧根作用域 Worker 的退役脚本；它会注销旧注册并清理旧根缓存，防止历史客户端截获 `/issues/`。
 - E2E 阻止远程请求，证明核心工作流不依赖外网接口。
 - GitHub Actions 在不安装 Rust 的 Ubuntu 环境完成校验、构建和部署。
 - `main` 构建上传到 commit SHA 版本目录，通过软链接原子发布到 `https://vst2t.i7yun.top/hero-lineup/`；`/issues/` 独立反向代理到 Gitea，根目录只负责跳转。

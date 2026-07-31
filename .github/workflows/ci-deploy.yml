@@ -29,6 +29,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: node --check ops/nginx/root-sw-retire.js
       - name: Build production subpath
         env:
           VITE_BASE_PATH: /hero-lineup/
@@ -98,11 +99,14 @@ jobs:
         run: |
           scp -i ~/.ssh/hero_lineup_deploy ops/nginx/hero-lineup-web.conf \
             "$DEPLOY_USER@$DEPLOY_HOST:/tmp/hero-lineup-web.conf"
+          scp -i ~/.ssh/hero_lineup_deploy ops/nginx/root-sw-retire.js \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/hero-lineup-root-sw-retire.js"
           ssh -i ~/.ssh/hero_lineup_deploy "$DEPLOY_USER@$DEPLOY_HOST" '
             set -e
             target=/etc/nginx/sites-available/hero-lineup-web
             backup=/etc/nginx/sites-available/hero-lineup-web.ci-backup
             cp "$target" "$backup"
+            install -m 644 /tmp/hero-lineup-root-sw-retire.js /var/www/hero-lineup-root-sw-retire.js
             install -m 644 /tmp/hero-lineup-web.conf "$target"
             if ! nginx -t; then
               cp "$backup" "$target"
@@ -114,6 +118,8 @@ jobs:
       - name: Verify production
         run: |
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' https://vst2t.i7yun.top/)" = "302"
+          curl --fail --silent --show-error https://vst2t.i7yun.top/sw.js |
+            grep --quiet 'hero-lineup-root-worker-retired-v1'
           curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/hero-lineup/ >/dev/null
           curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/hero-lineup/content/manifest.json |
             node -e "let value=''; process.stdin.on('data', chunk => value += chunk); process.stdin.on('end', () => JSON.parse(value))"

@@ -60,6 +60,16 @@ server {
         return 302 /hero-lineup/;
     }
 
+    # 旧版曾在根作用域注册 PWA。该端点用于让旧浏览器接收退役
+    # Worker、删除旧根缓存并注销，防止继续截获 /issues/。
+    location = /sw.js {
+        alias /var/www/hero-lineup-root-sw-retire.js;
+        default_type application/javascript;
+        expires off;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Service-Worker-Allowed "/";
+    }
+
     location = /hero-lineup {
         return 308 /hero-lineup/;
     }
@@ -194,6 +204,8 @@ certbot --nginx -d vst2t.i7yun.top
 如不希望收集用户行为，不加入第三方分析脚本。
 
 问题反馈入口可以反向代理到同机 Gitea 的 `/issues/`。这是可选的独立服务，不属于应用运行依赖；Gitea 不可用时，配装、计算、存储、导入导出和离线启动仍须全部正常。
+
+历史版本曾从 `/sw.js` 注册根作用域 Service Worker。只移动新版 Worker 到 `/hero-lineup/sw.js` 不会自动移除旧注册，旧 Worker 仍可能把 `/issues/` 导航回退到装备搭配页面。因此生产环境保留 [`ops/nginx/root-sw-retire.js`](../ops/nginx/root-sw-retire.js) 作为根 Worker 的退役脚本：它接管旧注册后清理旧根缓存、注销自身并重新加载客户端。新版 PWA 只控制 `/hero-lineup/`。
 
 ## 8. 验收条件
 
