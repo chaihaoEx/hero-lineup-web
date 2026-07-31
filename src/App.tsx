@@ -2,7 +2,7 @@ import { createContext, useContext, useDeferredValue, useEffect, useMemo, useRef
 import { createPortal } from "react-dom";
 import {
   Archive, Check, Clipboard, Copy, Download,
-  GripVertical, HardDrive, PackageOpen, PauseCircle, Plus, ShieldCheck,
+  ChevronRight, GripVertical, HardDrive, LayoutGrid, Map as MapIcon, PackageOpen, PauseCircle, Plus, Save, ShieldCheck,
   Trash2, Upload, Users, X,
 } from "lucide-react";
 import { applyEquipmentFieldToAll, catalogChampions, championElementValue, elements, itemsForSlot, makeHero, normalizeHeroEquipmentSlots, skillsForSlot, type Catalog, type CatalogItem, type CatalogQuest, type CatalogSkill, type EquipmentApplyField } from "./data/catalog";
@@ -15,6 +15,7 @@ import {
   numericOwnedCount, ownedEquipmentKey, type EquipmentNeed, type OwnedEquipmentCounts,
 } from "./data/equipmentNeeds";
 import { desktopBridge } from "./platform/bridge";
+import { useMobileInterface } from "./platform/device";
 import { useWorkspace } from "./state/useWorkspace";
 import type { AdventureTask, BuildTemplate, CalculatedSheet, Champion, ChampionEquipmentConfig, ChampionLoadout, ElementType, Hero, LineupSystem, PartyUnit, Quality, SimulationAttemptResult, SimulationProgress, TaskGroup, UnitStats } from "./types/domain";
 import {
@@ -1569,10 +1570,99 @@ function SystemSidebar({ systems, activeId, dirty, contentVersion, onSelect, onC
   </section>;
 }
 
+type MobileSection = "systems" | "champions" | "heroes" | "adventures";
+
+function MobileSystemHub({ systems, activeId, dirty, contentVersion, onSelect, onCreate, onDuplicate, onDelete, onSave, onImport, onPasteConfig, onShowTemplates, onExportCode, onExportFile, onBackup, onRestore, onRename, onImportCode }: {
+  systems: LineupSystem[];
+  activeId: string;
+  dirty: boolean;
+  contentVersion: string;
+  onSelect: (id: string) => boolean;
+  onCreate: (name: string, description: string, localPublic: boolean) => void;
+  onDuplicate: () => void;
+  onDelete: (id: string) => void;
+  onSave: () => void;
+  onImport: () => void;
+  onPasteConfig: () => void;
+  onShowTemplates: () => void;
+  onExportCode: (system: LineupSystem) => void;
+  onExportFile: () => void;
+  onBackup: () => void;
+  onRestore: () => void;
+  onRename: (name: string, description: string, localPublic: boolean) => void;
+  onImportCode: (code: string) => string | undefined;
+}) {
+  const [editingSystemId, setEditingSystemId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const activeSystem = systems.find((system) => system.id === activeId) ?? systems[0]!;
+  const editingSystem = systems.find((system) => system.id === editingSystemId);
+  const taskCount = activeSystem.taskGroups.reduce((sum, group) => sum + group.tasks.length, 0);
+
+  return <section className="mobile-system-hub" aria-labelledby="mobile-system-title">
+    <article className="mobile-active-system">
+      <span>当前体系</span>
+      <h1 id="mobile-system-title">{activeSystem.name}</h1>
+      <p>{activeSystem.description || "还没有体系描述，可以在编辑中补充。"}</p>
+      <div className="mobile-system-metrics">
+        <span><strong>{activeSystem.heroes.length}</strong>英雄</span>
+        <span><strong>{taskCount}</strong>任务</span>
+        <span><strong>{activeSystem.localPublic ? "公开" : "私有"}</strong>可见性</span>
+      </div>
+      <div className="mobile-active-actions">
+        <button className="mobile-primary-action" data-dirty={dirty || undefined} onClick={onSave}><Save size={18} />{dirty ? "保存更改" : "已保存"}</button>
+        <button onClick={() => setEditingSystemId(activeSystem.id)}>编辑体系</button>
+      </div>
+    </article>
+
+    <div className="mobile-section-title">
+      <div><span>我的体系</span><strong>{systems.length} 个本地体系</strong></div>
+      <button onClick={() => setCreating(true)}><Plus size={17} />新增</button>
+    </div>
+    <div className="mobile-system-list">
+      {systems.map((system) => <article key={system.id} className={system.id === activeId ? "active" : ""}>
+        <button className="mobile-system-select" onClick={() => onSelect(system.id)}>
+          <span className="mobile-system-symbol"><LayoutGrid size={18} /></span>
+          <span><strong>{system.name}</strong><small>{system.heroes.length} 英雄 · {system.taskGroups.reduce((sum, group) => sum + group.tasks.length, 0)} 任务</small></span>
+          <ChevronRight size={18} />
+        </button>
+        <div className="mobile-system-row-actions">
+          <button onClick={() => setEditingSystemId(system.id)}>编辑</button>
+          <button onClick={() => onExportCode(system)}>口令</button>
+          {systems.length > 1 && <button className="danger" onClick={() => onDelete(system.id)}>删除</button>}
+        </div>
+      </article>)}
+    </div>
+
+    <div className="mobile-section-title"><div><span>数据工具</span><strong>导入、导出与本地备份</strong></div></div>
+    <div className="mobile-tool-grid">
+      <button onClick={() => setCreating(true)}><Plus size={18} /><span>新增 / 口令导入</span></button>
+      <button onClick={onPasteConfig}><Clipboard size={18} /><span>粘贴配置</span></button>
+      <button onClick={onImport}><Upload size={18} /><span>导入文件</span></button>
+      <button onClick={onExportFile}><Download size={18} /><span>导出文件</span></button>
+      <button onClick={onDuplicate}><Copy size={18} /><span>复制当前</span></button>
+      <button onClick={onShowTemplates}><PackageOpen size={18} /><span>配装模板</span></button>
+      <button onClick={onBackup}><Archive size={18} /><span>完整备份</span></button>
+      <button onClick={onRestore}><HardDrive size={18} /><span>恢复备份</span></button>
+    </div>
+    <p className="mobile-content-version">本地数据版本 {contentVersion}</p>
+
+    {editingSystem && <SystemEditModal system={editingSystem} onClose={() => setEditingSystemId(null)} onSave={onRename} />}
+    {creating && <SystemCreateModal onClose={() => setCreating(false)} onCreate={onCreate} onImport={onImportCode} />}
+  </section>;
+}
+
 function WorkspaceApp({ catalog, onCatalogChange }: { catalog: Catalog; onCatalogChange: (catalog: Catalog) => void }) {
   const workspace = useWorkspace(catalog);
+  const mobileInterface = useMobileInterface();
   const classes = catalog.classes;
   const champions = useMemo(() => catalogChampions(catalog), [catalog]);
+  const [mobileSection, setMobileSection] = useState<MobileSection>(() => {
+    try {
+      const stored = localStorage.getItem("heroLineup_mobileSection");
+      if (stored === "systems" || stored === "champions" || stored === "heroes" || stored === "adventures") return stored;
+    } catch { /* local preference is optional */ }
+    return "systems";
+  });
   const [sortMode, setSortMode] = useState<SortMode>("class");
   const [editingHero, setEditingHero] = useState<Hero | null>(null);
   const [editingChampion, setEditingChampion] = useState<Champion | null>(null);
@@ -1591,6 +1681,18 @@ function WorkspaceApp({ catalog, onCatalogChange }: { catalog: Catalog; onCatalo
   useEffect(() => {
     void desktopBridge.listTemplates().then(setTemplates).catch((error) => setToast(error instanceof Error ? error.message : "模板加载失败"));
   }, []);
+
+  useEffect(() => {
+    if (!mobileInterface) return;
+    try { localStorage.setItem("heroLineup_mobileSection", mobileSection); }
+    catch { /* local preference is optional */ }
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [mobileInterface, mobileSection]);
+
+  useEffect(() => {
+    document.body.classList.toggle("mobile-interface", mobileInterface);
+    return () => document.body.classList.remove("mobile-interface");
+  }, [mobileInterface]);
 
   const heroes = useMemo(() => sortHeroesLikeOnline(workspace.active?.heroes ?? [], classes, sortMode), [classes, sortMode, workspace.active?.heroes]);
   const equipmentNeeds = useMemo(() => {
@@ -1733,17 +1835,85 @@ function WorkspaceApp({ catalog, onCatalogChange }: { catalog: Catalog; onCatalo
   if (workspace.error) return <main className="loading-screen" role="alert"><HardDrive size={24} /><span>本地数据库加载失败：{workspace.error}</span><small>请确认浏览器允许本站使用本地存储，然后刷新页面重试。</small></main>;
   if (workspace.loading || !workspace.active) return <main className="loading-screen"><div className="loader" /><span>正在加载本地数据…</span></main>;
 
-  return <div className="app-shell online-shell">
+  const activeTaskCount = workspace.active.taskGroups.reduce((sum, group) => sum + group.tasks.length, 0);
+  const saveWorkspace = () => void workspace.save().then(() => setToast("所有更改已保存在本机"));
+  const importWorkspaceFile = () => { if (desktopBridge.isDesktop()) void importFromDialog(); else fileInput.current?.click(); };
+
+  return <div className={`app-shell online-shell ${mobileInterface ? "mobile-shell" : "desktop-shell"}`}>
     <input ref={fileInput} hidden type="file" accept=".zyslineup,application/json" onChange={(event) => void importFile(event.target.files?.[0])} />
-    <main className="workspace">
+    {mobileInterface ? <main className="mobile-workspace">
+      <header className="mobile-app-header">
+        <button className="mobile-brand-button" aria-label="前往体系管理" onClick={() => setMobileSection("systems")}>
+          <span className="mobile-brand-mark"><ShieldCheck size={20} /></span>
+          <span><small>英雄体系</small><strong>{workspace.active.name}</strong></span>
+          <ChevronRight size={17} />
+        </button>
+        <button className="mobile-save-button" data-dirty={workspace.dirty || undefined} onClick={saveWorkspace}><Save size={18} /><span>{workspace.dirty ? "保存" : "已保存"}</span></button>
+      </header>
+
+      <div className="mobile-page">
+        {mobileSection === "systems" && <MobileSystemHub
+          systems={workspace.systems}
+          activeId={workspace.activeId}
+          dirty={workspace.dirty}
+          contentVersion={catalog.gameDataVersion}
+          onSelect={selectSystem}
+          onCreate={(name, description, localPublic) => workspace.createSystem({ name, description, localPublic })}
+          onImportCode={importSystemCode}
+          onDuplicate={workspace.duplicateSystem}
+          onDelete={(id) => { if (window.confirm("删除这个阵容体系吗？此操作不可恢复。")) void workspace.deleteSystem(id); }}
+          onSave={saveWorkspace}
+          onImport={importWorkspaceFile}
+          onPasteConfig={() => void pasteSystemConfig()}
+          onShowTemplates={() => setShowTemplates(true)}
+          onExportCode={setExportingSystem}
+          onExportFile={() => void exportCurrent()}
+          onBackup={() => void exportBackup()}
+          onRestore={() => void restoreBackup()}
+          onRename={(name, description, localPublic) => workspace.updateActive((system) => ({ ...system, name, description, localPublic }))}
+        />}
+
+        {mobileSection === "champions" && <section className="mobile-roster-page" aria-labelledby="mobile-champions-title">
+          <div className="mobile-page-heading"><div><span>勇士阵容</span><h1 id="mobile-champions-title">{champions.length} 位勇士</h1><p>轻触勇士查看属性与配装</p></div><button onClick={() => setEquipmentNeedsKind("champion")}>装备统计</button></div>
+          <div className="mobile-roster-card"><div className="mobile-champion-grid">{champions.map((unit) => {
+            const loadout = workspace.active!.championLoadouts?.[unit.id];
+            return <ChampionCard key={unit.id} unit={{ ...unit, ...(loadout ?? {}), stats: { ...unit.stats, ...(loadout?.stats ?? {}), element: loadout?.stats?.element ?? championElementValue(loadout?.rank ?? unit.rank) } }} onEdit={() => setEditingChampion(unit)} />;
+          })}</div></div>
+          <p className="mobile-touch-hint">手机端使用轻触选择成员，不需要拖拽。</p>
+        </section>}
+
+        {mobileSection === "heroes" && <section className="mobile-roster-page" aria-labelledby="mobile-heroes-title">
+          <div className="mobile-page-heading"><div><span>英雄阵容</span><h1 id="mobile-heroes-title">{workspace.active.heroes.length} / 41 位英雄</h1><p>轻触英雄进入配装工作台</p></div><button className="mobile-add-button" disabled={workspace.active.heroes.length >= 41} onClick={() => setShowClassPicker(true)}><Plus size={17} />添加</button></div>
+          <div className="mobile-segmented-actions">
+            <nav aria-label="英雄排序"><button className={sortMode === "class" ? "active" : ""} onClick={() => setSortMode("class")}>职业</button><button className={sortMode === "element" ? "active" : ""} onClick={() => setSortMode("element")}>元素</button></nav>
+            <div><button onClick={() => setEquipmentNeedsKind("hero")}>装备统计</button><button onClick={() => void exportCurrentPng()}>导出阵容</button></div>
+          </div>
+          <div className="mobile-roster-card"><div className="mobile-hero-grid">{heroes.map((hero) => <HeroCard key={hero.id} hero={hero} allElements={classes.find((entry) => entry.id === hero.classId)?.allElements === true} onEdit={() => setEditingHero(hero)} onCopy={() => workspace.duplicateHero(hero)} onDelete={() => workspace.deleteHero(hero.id)} />)}{!heroes.length && <div className="empty-state"><Users size={30} /><h3>还没有英雄</h3><p>点击上方“添加”选择职业。</p></div>}</div></div>
+        </section>}
+
+        {mobileSection === "adventures" && <section className="mobile-adventure-page" aria-labelledby="mobile-adventures-title">
+          <div className="mobile-page-heading"><div><span>冒险任务</span><h1 id="mobile-adventures-title">{activeTaskCount} / 48 个任务</h1><p>点按任务卡片完成地图、成员与模拟设置</p></div><button className="mobile-add-button" disabled={activeTaskCount >= 48} onClick={workspace.addGroup}><Plus size={17} />分组</button></div>
+          <div className="mobile-adventure-list">{workspace.active.taskGroups.map((group) => <AdventureGroup key={group.id} systemId={workspace.active!.id} systemGameVersion={catalog.gameDataVersion} group={group} units={workspace.units} quests={catalog.quests} catalog={catalog} assignedUnitIds={[...new Set(group.tasks.flatMap((task) => task.memberIds))]} canAddTask={activeTaskCount < 48} onAddTask={(quest) => workspace.addTask(group.id, quest)} onDrop={(taskId, unitId) => workspace.dropUnit(group.id, taskId, unitId)} onMoveTask={(sourceGroupId, taskId, targetIndex) => workspace.moveTask(sourceGroupId, taskId, group.id, targetIndex)} onRemove={(taskId, unitId) => workspace.removeUnit(group.id, taskId, unitId)} onCopyTask={(task) => workspace.duplicateTask(group.id, task)} onDeleteTask={(taskId) => workspace.deleteTask(group.id, taskId)} onResult={workspace.setTaskResult} onTaskChange={(task) => workspace.updateTask(group.id, task)} />)}</div>
+        </section>}
+      </div>
+
+      <nav className="mobile-bottom-nav" aria-label="手机端主导航">
+        {([
+          ["systems", "体系", <LayoutGrid size={21} />, workspace.systems.length],
+          ["champions", "勇士", <ShieldCheck size={21} />, champions.length],
+          ["heroes", "英雄", <Users size={21} />, workspace.active.heroes.length],
+          ["adventures", "冒险", <MapIcon size={21} />, activeTaskCount],
+        ] as const).map(([section, label, icon, count]) => <button key={section} aria-current={mobileSection === section ? "page" : undefined} className={mobileSection === section ? "active" : ""} onClick={() => setMobileSection(section)}>{icon}<span>{label}</span><small>{count}</small></button>)}
+      </nav>
+    </main> : <main className="workspace">
       <div className="tool-container"><section className="tool-hero"><h1>英雄体系搭配平台</h1><div className="offline-warning"><span aria-hidden="true">⚠️</span>平台长期处于测试阶段，如发现与游戏实际存在差距或其它问题欢迎点击网站右下角反馈，后续稳定后会开放更多功能，感谢支持。</div></section>
-        <SystemSidebar systems={workspace.systems} activeId={workspace.activeId} dirty={workspace.dirty} contentVersion={catalog.gameDataVersion} onSelect={selectSystem} onCreate={(name, description, localPublic) => workspace.createSystem({ name, description, localPublic })} onImportCode={importSystemCode} onUseCollection={(system) => { const imported = workspace.importSystem(system); setToast(`已从本地收藏导入“${imported.name}”，请保存后持久化`); }} onDuplicate={workspace.duplicateSystem} onDelete={(id) => { if (window.confirm("删除这个阵容体系吗？此操作不可恢复。")) void workspace.deleteSystem(id); }} onSave={() => void workspace.save().then(() => setToast("所有更改已保存在本机"))} onImport={() => { if (desktopBridge.isDesktop()) void importFromDialog(); else fileInput.current?.click(); }} onPasteConfig={() => void pasteSystemConfig()} onShowTemplates={() => setShowTemplates(true)} onExportCode={setExportingSystem} onExportFile={(system) => void exportCurrent(system)} onBackup={() => void exportBackup()} onRestore={() => void restoreBackup()} onDataUpdate={() => void installDataPackage()} onRename={(name, description, localPublic) => workspace.updateActive((system) => ({ ...system, name, description, localPublic }))} />
+        <SystemSidebar systems={workspace.systems} activeId={workspace.activeId} dirty={workspace.dirty} contentVersion={catalog.gameDataVersion} onSelect={selectSystem} onCreate={(name, description, localPublic) => workspace.createSystem({ name, description, localPublic })} onImportCode={importSystemCode} onUseCollection={(system) => { const imported = workspace.importSystem(system); setToast(`已从本地收藏导入“${imported.name}”，请保存后持久化`); }} onDuplicate={workspace.duplicateSystem} onDelete={(id) => { if (window.confirm("删除这个阵容体系吗？此操作不可恢复。")) void workspace.deleteSystem(id); }} onSave={saveWorkspace} onImport={importWorkspaceFile} onPasteConfig={() => void pasteSystemConfig()} onShowTemplates={() => setShowTemplates(true)} onExportCode={setExportingSystem} onExportFile={(system) => void exportCurrent(system)} onBackup={() => void exportBackup()} onRestore={() => void restoreBackup()} onDataUpdate={() => void installDataPackage()} onRename={(name, description, localPublic) => workspace.updateActive((system) => ({ ...system, name, description, localPublic }))} />
       <div className="content online-content">
         <section id="champions-section" className="flow-section"><section className="section-heading"><div><h2>勇士阵容</h2><p>点击勇士图标进行配装，可拖动到下方任务卡片中组队冒险</p></div><button className="zys-button blue" onClick={() => setEquipmentNeedsKind("champion")}>装备统计</button></section><div className="champion-grid">{champions.map((unit) => { const loadout = workspace.active!.championLoadouts?.[unit.id]; return <ChampionCard key={unit.id} unit={{ ...unit, ...(loadout ?? {}), stats: { ...unit.stats, ...(loadout?.stats ?? {}), element: loadout?.stats?.element ?? championElementValue(loadout?.rank ?? unit.rank) } }} onEdit={() => setEditingChampion(unit)} />; })}</div></section>
         <section id="heroes-section" className="flow-section"><section className="section-heading hero-section-heading"><div><div><h2>英雄阵容 ({workspace.active.heroes.length}/41)</h2><p>点击英雄图标进行配装，可拖动到下方任务卡片中组队冒险</p></div><nav className="hero-sort-tabs" aria-label="英雄排序"><button className={`manager-tab ${sortMode === "class" ? "active" : ""}`} onClick={() => setSortMode("class")}>职业排序</button><button className={`manager-tab ${sortMode === "element" ? "active" : ""}`} onClick={() => setSortMode("element")}>元素排序</button></nav></div><div className="toolbar"><button className="zys-button blue" onClick={() => setEquipmentNeedsKind("hero")}>装备统计</button><button className="zys-button violet" onClick={() => void exportCurrentPng()}>导出阵容</button><button className="zys-button green" disabled={workspace.active.heroes.length >= 41} onClick={() => setShowClassPicker(true)}>添加英雄</button></div></section><div className="hero-list">{heroes.map((hero) => <HeroCard key={hero.id} hero={hero} allElements={classes.find((entry) => entry.id === hero.classId)?.allElements === true} onEdit={() => setEditingHero(hero)} onCopy={() => workspace.duplicateHero(hero)} onDelete={() => workspace.deleteHero(hero.id)} />)}{!heroes.length && <div className="empty-state"><Users size={30} /><h3>还没有英雄</h3><p>点击“添加英雄”选择职业。</p></div>}</div></section>
         <section id="adventures-section" className="flow-section"><section className="section-heading"><div><h2>冒险任务 ({workspace.active.taskGroups.reduce((sum, group) => sum + group.tasks.length, 0)}/48)</h2><p>点击冒险任务卡片左上角冒险图标可以切换地图，拖动冒险任务卡片切换分组</p></div><button className="primary-button" disabled={workspace.active.taskGroups.reduce((sum, group) => sum + group.tasks.length, 0) >= 48} onClick={workspace.addGroup}>添加分组</button></section>{workspace.active.taskGroups.map((group) => <AdventureGroup key={group.id} systemId={workspace.active!.id} systemGameVersion={catalog.gameDataVersion} group={group} units={workspace.units} quests={catalog.quests} catalog={catalog} assignedUnitIds={[...new Set(group.tasks.flatMap((task) => task.memberIds))]} canAddTask={workspace.active!.taskGroups.reduce((sum, entry) => sum + entry.tasks.length, 0) < 48} onAddTask={(quest) => workspace.addTask(group.id, quest)} onDrop={(taskId, unitId) => workspace.dropUnit(group.id, taskId, unitId)} onMoveTask={(sourceGroupId, taskId, targetIndex) => workspace.moveTask(sourceGroupId, taskId, group.id, targetIndex)} onRemove={(taskId, unitId) => workspace.removeUnit(group.id, taskId, unitId)} onCopyTask={(task) => workspace.duplicateTask(group.id, task)} onDeleteTask={(taskId) => workspace.deleteTask(group.id, taskId)} onResult={workspace.setTaskResult} onTaskChange={(task) => workspace.updateTask(group.id, task)} />)}</section>
       </div></div>
-    </main>
+    </main>}
     {editingHero && <EquipmentModal key={editingHero.id} hero={editingHero} catalog={catalog} templates={templates} onClose={() => setEditingHero(null)} onPrevious={() => {
       const heroList = workspace.active!.heroes;
       const currentIndex = heroList.findIndex((hero) => hero.id === editingHero.id);
