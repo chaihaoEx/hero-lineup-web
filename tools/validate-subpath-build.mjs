@@ -16,4 +16,11 @@ if (!html.includes(`${expectedBase}assets/`)) throw new Error(`index assets do n
 if (manifest.start_url !== expectedBase) throw new Error(`manifest.start_url is ${String(manifest.start_url)}, expected ${expectedBase}`);
 if (!serviceWorker.includes(`${expectedBase}index.html`)) throw new Error(`Service Worker fallback does not use ${expectedBase}`);
 
-console.log(`Subpath build verified at ${expectedBase}`);
+const precachedUrls = [...serviceWorker.matchAll(/\{url:"([^"]+)"/g)].map((match) => match[1]);
+if (precachedUrls.length > 100) throw new Error(`Service Worker eagerly precaches ${precachedUrls.length} files; expected at most 100`);
+if (precachedUrls.some((url) => url.includes("content/Sprite/"))) throw new Error("Service Worker must cache sprites on demand instead of precaching them");
+for (const path of ["content/manifest.json", "content/TextAsset/items.json", "content/TextAsset/texts_zh.json"]) {
+  if (!precachedUrls.includes(path)) throw new Error(`Service Worker does not precache ${path}`);
+}
+
+console.log(`Subpath build verified at ${expectedBase}: ${precachedUrls.length} core files precached, sprites cached on demand`);

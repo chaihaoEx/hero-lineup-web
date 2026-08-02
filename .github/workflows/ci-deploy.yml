@@ -123,5 +123,10 @@ jobs:
           curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/hero-lineup/ >/dev/null
           curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/hero-lineup/content/manifest.json |
             node -e "let value=''; process.stdin.on('data', chunk => value += chunk); process.stdin.on('end', () => JSON.parse(value))"
+          curl --fail --silent --show-error --compressed --head \
+            https://vst2t.i7yun.top/hero-lineup/content/TextAsset/items.json |
+            grep --ignore-case --extended-regexp --quiet '^content-encoding: (gzip|br)\r?$'
+          test "$(curl --fail --silent --show-error --output /dev/null --write-out '%{http_version}' \
+            https://vst2t.i7yun.top/hero-lineup/)" = "2"
           curl --fail --silent --show-error --retry 5 --retry-delay 2 \
             https://vst2t.i7yun.top/issues/chaihao/hero-lineup-feedback/issues >/dev/null

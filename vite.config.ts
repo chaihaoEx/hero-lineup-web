@@ -23,10 +23,24 @@ export default defineConfig({
         icons: [{ src: "app-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
       },
       workbox: {
-        globPatterns: ["**/*.{html,js,css,svg,png,jpg,jpeg,webp,json,woff,woff2}"],
+        globPatterns: ["**/*.{html,js,css,svg,json,woff,woff2}"],
+        globIgnores: ["content/Sprite/**/*"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         navigateFallback: `${base}index.html`,
+        runtimeCaching: [{
+          urlPattern: /\/content\/Sprite\//,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "hero-lineup-sprites-v1",
+            cacheableResponse: { statuses: [0, 200] },
+            expiration: {
+              maxEntries: 3_000,
+              maxAgeSeconds: 60 * 60 * 24 * 30,
+              purgeOnQuotaError: true,
+            },
+          },
+        }],
       },
     }),
   ],

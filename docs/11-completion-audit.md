@@ -65,9 +65,10 @@ tests/App.test.tsx
 
 ## 5. 浏览器、离线和部署
 
-- Vitest：17 个测试文件、92 个测试通过。
+- Vitest：18 个测试文件、96 个测试通过。
 - Playwright：Chromium、Firefox、WebKit 共 72 个端到端测试通过。
-- PWA：首次缓存后，完全断网重新启动测试通过。
+- PWA：仅预缓存 30 个应用壳与核心 JSON 文件，2,276 张图片按需缓存；完成核心缓存并访问可见图片后，完全断网重新启动测试通过。
+- 首访目录 JSON 使用 gzip 和 HTTP/2 传输；Service Worker 延迟到页面加载完成后的浏览器空闲期注册，不再与首屏目录争抢连接。
 - 生产构建固定使用虚拟目录 `/hero-lineup/`，构建产物中的脚本、资源、manifest、Service Worker scope 和离线回退均经过子路径校验。
 - 根路径 `/sw.js` 只提供旧根作用域 Worker 的退役脚本；它会注销旧注册并清理旧根缓存，防止历史客户端截获 `/issues/`。
 - E2E 阻止远程请求，证明核心工作流不依赖外网接口。

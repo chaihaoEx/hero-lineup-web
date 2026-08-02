@@ -36,6 +36,19 @@ test("shows a recoverable error instead of hanging when IndexedDB initialization
   expect(document.querySelector(".loader")).not.toBeInTheDocument();
 });
 
+test("explains the first catalog load before marking it complete", async () => {
+  let finishCatalogLoad!: (catalog: typeof previewCatalog) => void;
+  vi.spyOn(desktopBridge, "loadCatalog").mockReturnValueOnce(new Promise((resolve) => { finishCatalogLoad = resolve; }));
+  render(<App />);
+
+  expect(screen.getByRole("status")).toHaveTextContent("首次打开正在准备本地数据");
+  expect(localStorage.getItem("heroLineup_catalogLoaded_v1")).toBeNull();
+
+  finishCatalogLoad(previewCatalog);
+  await appReady();
+  expect(localStorage.getItem("heroLineup_catalogLoaded_v1")).toBe("1");
+});
+
 test("renders online-style roster element badges and sorts same-class heroes by name", async () => {
   const systems = JSON.parse(localStorage.getItem("zys.hero-lineup.systems.v1")!) as ReturnType<typeof makeDefaultSystem>[];
   const first = systems[0]!.heroes[0]!;

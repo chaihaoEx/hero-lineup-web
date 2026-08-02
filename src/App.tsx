@@ -281,16 +281,48 @@ function UnitAvatar({ unit, small = false }: { unit: PartyUnit; small?: boolean 
   </div>;
 }
 
+const resolvedAssetUrls = new Map<string, string>();
+const pendingAssetUrls = new Map<string, Promise<string>>();
+
+function resolveAssetUrl(path: string): Promise<string> {
+  const resolved = resolvedAssetUrls.get(path);
+  if (resolved) return Promise.resolve(resolved);
+  const pending = pendingAssetUrls.get(path);
+  if (pending) return pending;
+  const request = desktopBridge.assetUrl(path).then((source) => {
+    resolvedAssetUrls.set(path, source);
+    pendingAssetUrls.delete(path);
+    return source;
+  }, (error: unknown) => {
+    pendingAssetUrls.delete(path);
+    throw error;
+  });
+  pendingAssetUrls.set(path, request);
+  return request;
+}
+
 function AssetImage({ path, alt, className = "" }: { path?: string | undefined; alt: string; className?: string }) {
-  const [source, setSource] = useState("");
-  const [failed, setFailed] = useState(false);
+  const cachedSource = path ? resolvedAssetUrls.get(path) ?? "" : "";
+  const [asset, setAsset] = useState({ path, source: cachedSource, failed: false });
+  const current = asset.path === path ? asset : { path, source: cachedSource, failed: false };
   useEffect(() => {
-    setFailed(false);
-    if (!path) { setSource(""); return; }
-    void desktopBridge.assetUrl(path).then(setSource).catch(() => setFailed(true));
+    if (!path) return;
+    const resolved = resolvedAssetUrls.get(path);
+    if (resolved) {
+      setAsset((value) => value.path === path && value.source === resolved && !value.failed
+        ? value
+        : { path, source: resolved, failed: false });
+      return;
+    }
+    let active = true;
+    void resolveAssetUrl(path).then(
+      (source) => { if (active) setAsset({ path, source, failed: false }); },
+      () => { if (active) setAsset({ path, source: "", failed: true }); },
+    );
+    return () => { active = false; };
   }, [path]);
-  if (!source || failed) return <span className={`asset-fallback ${className}`} aria-hidden="true">{alt.slice(0, 1)}</span>;
-  return <img className={className} src={source} alt={alt} onError={() => setFailed(true)} />;
+  if (!current.source || current.failed) return <span className={`asset-fallback ${className}`} aria-hidden="true">{alt.slice(0, 1)}</span>;
+  return <img className={className} src={current.source} alt={alt} onError={() => setAsset({ ...current, failed: true })} />;
 }
 
 function RosterAvatar({ unit, allElements = false }: { unit: PartyUnit; allElements?: boolean }) {
@@ -1959,13 +1991,23 @@ function WorkspaceApp({ catalog, onCatalogChange }: { catalog: Catalog; onCatalo
   </div>;
 }
 
+const FIRST_CATALOG_LOAD_KEY = "heroLineup_catalogLoaded_v1";
+
 export default function App() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [catalogError, setCatalogError] = useState("");
+  const [firstCatalogLoad] = useState(() => {
+    try { return localStorage.getItem(FIRST_CATALOG_LOAD_KEY) !== "1"; }
+    catch { return true; }
+  });
   useEffect(() => {
-    void desktopBridge.loadCatalog().then(setCatalog).catch((error) => setCatalogError(error instanceof Error ? error.message : String(error)));
+    void desktopBridge.loadCatalog().then((loaded) => {
+      setCatalog(loaded);
+      try { localStorage.setItem(FIRST_CATALOG_LOAD_KEY, "1"); }
+      catch { /* the first-load hint remains best-effort */ }
+    }).catch((error) => setCatalogError(error instanceof Error ? error.message : String(error)));
   }, []);
   if (catalogError) return <main className="loading-screen"><PackageOpen size={24} /><span>本地数据加载失败：{catalogError}</span></main>;
-  if (!catalog) return <main className="loading-screen"><div className="loader" /><span>正在校验并加载完整本地目录…</span></main>;
+  if (!catalog) return <main className="loading-screen" role="status" aria-live="polite"><div className="loader" /><div className="loading-copy"><span>正在校验并加载完整本地目录…</span>{firstCatalogLoad && <small>首次打开正在准备本地数据，移动网络下可能需要一些时间，请保持页面开启；完成后再次进入会更快。</small>}</div></main>;
   return <WorkspaceApp catalog={catalog} onCatalogChange={setCatalog} />;
 }

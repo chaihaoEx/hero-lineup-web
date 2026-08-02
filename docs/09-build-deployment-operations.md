@@ -49,12 +49,19 @@ vst2t.i7yun.top
 
 ```nginx
 server {
-    listen 80;
-    listen [::]:80;
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2 ipv6only=on;
     server_name vst2t.i7yun.top;
 
     root /var/www;
     index index.html;
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_types application/javascript application/json application/manifest+json image/svg+xml text/css;
 
     location = / {
         return 302 /hero-lineup/;
@@ -141,6 +148,14 @@ server {
     }
 }
 ```
+
+### 首访性能与离线缓存
+
+- HTML、JavaScript、CSS、JSON、manifest 和 SVG 通过 gzip 传输，HTTPS 使用 HTTP/2。
+- Service Worker 在页面加载完成并进入浏览器空闲期后注册，避免与首次目录下载争抢连接和主线程。
+- PWA 只预缓存应用壳、完整本地目录 JSON 和交换 schema；构建校验限制预缓存文件不超过 100 个。
+- `content/Sprite/` 图片不在首次访问时整包下载，而是在页面实际使用后由 `CacheFirst` 运行时缓存保存 30 天。
+- 首次目录加载完成后，页面会记录本地标记；首次访问期间向用户显示数据准备提示。
 
 ## 4. HTTPS
 

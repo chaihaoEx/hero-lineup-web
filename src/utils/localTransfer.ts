@@ -9,7 +9,6 @@ import type {
   PartyUnit,
   SimulationResult,
 } from "../types/domain";
-import { toPng } from "html-to-image";
 
 export type ClipboardKind = "system" | "hero" | "champion-loadout";
 
@@ -196,6 +195,7 @@ async function waitForImages(root: HTMLElement): Promise<void> {
 }
 
 export async function captureElementPng(root: HTMLElement): Promise<string> {
+  const { toPng } = await import("html-to-image");
   if ("fonts" in document) await document.fonts.ready;
   await waitForImages(root);
   await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
