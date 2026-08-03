@@ -52,6 +52,9 @@ test.describe("浏览器预览中的主要离线工作流", () => {
     await expect(page.locator(".unit-card")).toHaveCount(1);
     await expect(page.locator(".hero-icon-card .roster-element-badge")).toHaveAttribute("alt", "earth");
     await expect(page.locator(".champion-icon-card .roster-element-badge").first()).toHaveAttribute("alt", "light");
+    const saveButton = page.getByRole("button", { name: /保存当前体系/ });
+    await saveButton.click();
+    await expect(saveButton).not.toHaveAttribute("data-dirty");
 
     await page.locator(".unit-card").first().getByRole("button", { name: "配装" }).click();
     await page.getByTitle("点击改名").click();
@@ -68,7 +71,7 @@ test.describe("浏览器预览中的主要离线工作流", () => {
     await page.getByRole("button", { name: "技能 未选择" }).first().click();
     await page.getByRole("button", { name: "选择技能 裂痕" }).click();
     await expect(page.getByRole("button", { name: "技能 裂痕" })).toBeVisible();
-    await expect(page.getByText("修改已实时同步到当前体系")).toBeVisible();
+    await expect(saveButton).toHaveAttribute("data-dirty", "true");
     await page.getByRole("button", { name: "导出图片" }).click();
     const heroImagePreview = page.getByRole("dialog", { name: "英雄配装图片预览" });
     await expect(heroImagePreview).toBeVisible();
@@ -78,6 +81,8 @@ test.describe("浏览器预览中的主要离线工作流", () => {
     await page.getByRole("button", { name: "关闭", exact: true }).click();
     await expect(page.locator(".unit-card").filter({ hasText: "E2E 骑士" })).toContainText("E2E 骑士");
     await expect(page.getByTitle("学徒短剑")).toBeVisible();
+    await saveButton.click();
+    await expect(saveButton).not.toHaveAttribute("data-dirty");
 
     const champion = page.locator(".champion-card").first();
     await champion.scrollIntoViewIfNeeded();
@@ -88,7 +93,7 @@ test.describe("浏览器预览中的主要离线工作流", () => {
     await page.getByRole("option", { name: "11+1", exact: true }).click();
     await expect(page.getByRole("button", { name: "使魔装备槽" })).toBeVisible();
     await expect(page.getByRole("button", { name: "光环装备槽" })).toBeVisible();
-    await expect(page.getByText("修改已实时同步到当前体系")).toBeVisible();
+    await expect(saveButton).toHaveAttribute("data-dirty", "true");
     await page.getByRole("button", { name: "关闭", exact: true }).click();
     await expect(champion.locator(".unit-icon-open")).toHaveAttribute("title", /Lv\.45 · Rank \d+/);
     await assertOffline(remoteRequests);
