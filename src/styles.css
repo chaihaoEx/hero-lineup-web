@@ -2924,6 +2924,36 @@ body.mobile-interface .champion-modal .champion-slot .overview-slot-art {
   width:min(138px,36vw) !important;
   height:min(138px,36vw) !important;
 }
+body.mobile-interface .equipment-studio .slot-tier-badge {
+  top:-9px;
+  left:-8px;
+  width:34px;
+  height:34px;
+}
+body.mobile-interface .equipment-studio .slot-tier-badge b { font-size:11px; }
+body.mobile-interface .equipment-studio .slot-affinity-stack {
+  top:27px;
+  left:-7px;
+  gap:0;
+}
+body.mobile-interface .equipment-studio .slot-affinity-icon {
+  width:26px;
+  height:26px;
+}
+body.mobile-interface .equipment-studio .slot-attachment-icon {
+  width:34px;
+  height:34px;
+}
+body.mobile-interface .equipment-studio .slot-attachment-icon.element-attachment {
+  top:-9px;
+  right:-8px;
+}
+body.mobile-interface .equipment-studio .slot-attachment-icon.spirit-attachment {
+  top:29px;
+  right:-7px;
+  width:31px;
+  height:31px;
+}
 body.mobile-interface .champion-team-skill {
   min-height:0;
   padding:10px 16px;

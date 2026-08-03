@@ -664,7 +664,7 @@ function EquipmentModal({ hero, catalog, templates, mobileInterface, onClose, on
           await onSaveRef.current(synced, next);
           if (active) setTransferStatus(next.issues.some((issue) => issue.severity === "error")
             ? "修改已同步；存在未计入属性的无效配置，请查看校验提示"
-            : "修改已实时同步到当前体系");
+            : "");
         }
       })
       .catch((error) => { if (active) setTransferStatus(error instanceof Error ? error.message : "实时计算失败"); })
@@ -965,7 +965,7 @@ function ChampionEquipmentModal({ champion, catalog, loadout, templates, mobileI
           lastSyncedDraftRef.current = serializedDraft;
           setTransferStatus(normal.issues.some((issue) => issue.severity === "error")
             ? "修改已同步；存在未计入属性的无效配置，请查看校验提示"
-            : "修改已实时同步到当前体系");
+            : "");
         }
       })
         .catch((error) => { if (requestId === calculationRequestRef.current) setTransferStatus(error instanceof Error ? error.message : "实时计算失败"); })

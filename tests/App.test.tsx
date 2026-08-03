@@ -163,8 +163,8 @@ test("adds a hero and edits equipment", async () => {
   await user.click(screen.getByRole("button", { name: "武器装备槽" }));
   await user.click(screen.getByRole("button", { name: /学徒短剑/ }));
   expect(screen.getAllByRole("button", { name: "全部应用" })).toHaveLength(3);
-  await screen.findByText("修改已实时同步到当前体系");
-  expect(screen.getByText("999")).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByText("999")).toBeInTheDocument());
+  expect(screen.queryByText("修改已实时同步到当前体系")).not.toBeInTheDocument();
   await user.click(screen.getAllByRole("button", { name: "关闭" }).at(-1)!);
   await user.click(screen.getByRole("button", { name: /^关闭$/ }));
   expect(screen.getByTitle("学徒短剑")).toBeInTheDocument();
@@ -939,7 +939,8 @@ test("copies and validates clipboard system and hero configurations", async () =
   await user.click(screen.getByRole("button", { name: "粘贴导入" }));
   expect(screen.getByTitle("点击改名")).toHaveTextContent("骑士1");
   expect(screen.getByRole("button", { name: "英雄等级" })).toHaveTextContent("37");
-  await screen.findByText("修改已实时同步到当前体系");
+  await waitFor(() => expect(screen.queryByText("英雄配装已校验并载入，正在实时同步")).not.toBeInTheDocument());
+  expect(screen.queryByText("修改已实时同步到当前体系")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: /^关闭$/ }));
   expect(screen.getAllByText("骑士1").length).toBeGreaterThan(0);
 });
