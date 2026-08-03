@@ -601,8 +601,9 @@ function ChampionCard({ unit, onEdit }: { unit: PartyUnit; onEdit: () => void })
   </article>;
 }
 
-function EquipmentModal({ hero, catalog, templates, onClose, onPrevious, onNext, onClone, onSave, onSaveTemplate }: {
+function EquipmentModal({ hero, catalog, templates, mobileInterface, onClose, onPrevious, onNext, onClone, onSave, onSaveTemplate }: {
   hero: Hero; catalog: Catalog; templates: BuildTemplate[]; onClose: () => void; onSave: (hero: Hero, sheet: CalculatedSheet) => void | Promise<void>;
+  mobileInterface: boolean;
   onPrevious: () => void; onNext: () => void; onClone: (hero: Hero) => void;
   onSaveTemplate: (name: string, hero: Hero) => Promise<void>;
 }) {
@@ -718,14 +719,15 @@ function EquipmentModal({ hero, catalog, templates, onClose, onPrevious, onNext,
     }
   };
   return <EquipmentPreviewContext.Provider value={equipmentPreviewValue}><div className="modal-backdrop equipment-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <button className="equipment-hero-nav previous" aria-label="上一个英雄" onClick={onPrevious}>‹</button>
+    {!mobileInterface && <button className="equipment-hero-nav previous" aria-label="上一个英雄" onClick={onPrevious}>‹</button>}
     <section className="modal equipment-modal equipment-studio" role="dialog" aria-modal="true" aria-labelledby="equipment-title">
       <header className="modal-header">
         <div><h2 id="equipment-title">英雄配装模拟 - {draft.className}</h2></div>
-        <div className="modal-header-actions"><button className="zys-button blue" onClick={() => void pasteLoadout()}>导入</button><input className="modal-import-code" aria-label="粘贴配置码" placeholder="粘贴配置码" value={importText} onChange={(event) => setImportText(event.target.value)} /><button className="zys-button violet" onClick={() => void copyLoadout()}>导出</button><button className="zys-button green" onClick={() => onClone(draft)}>克隆</button><button className="zys-button violet" disabled={exportingImage} onClick={() => void exportImage()}>{exportingImage ? "导出中..." : "导出图片"}</button><button className="zys-button red" onClick={onClose}>关闭</button></div>
+        <div className="modal-header-actions"><button className="zys-button blue" onClick={() => void pasteLoadout()}>导入</button><input className="modal-import-code" aria-label="粘贴配置码" placeholder="粘贴配置码" value={importText} onChange={(event) => setImportText(event.target.value)} /><button className="zys-button violet" onClick={() => void copyLoadout()}>导出</button><button className="zys-button green" onClick={() => onClone(draft)}>克隆</button>{!mobileInterface && <><button className="zys-button violet desktop-editor-action" disabled={exportingImage} onClick={() => void exportImage()}>{exportingImage ? "导出中..." : "导出图片"}</button><button className="zys-button red desktop-editor-action" onClick={onClose}>关闭</button></>}</div>
       </header>
       <div ref={exportSurfaceRef} className="editor-export-surface">
       <div className="hero-parameter-bar">
+        {mobileInterface && <div className="mobile-hero-switch" aria-label="切换英雄"><button type="button" aria-label="上一个英雄" onClick={onPrevious}>‹</button><button type="button" aria-label="下一个英雄" onClick={onNext}>›</button></div>}
         <div className="hero-identity"><UnitAvatar unit={draft} /><div className="hero-name-editor">{editingName ? <input aria-label="英雄名称" autoFocus value={heroNameDraft} onChange={(event) => setHeroNameDraft(event.target.value)} onBlur={() => { const name = clampOnlineHeroName(heroNameDraft) || draft.name; setHeroNameDraft(name); setDraft({ ...draft, name }); setEditingName(false); }} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setHeroNameDraft(draft.name); setEditingName(false); } }} /> : <button type="button" title="点击改名" onClick={() => { setHeroNameDraft(draft.name); setEditingName(true); }}>{draft.name}</button>}</div></div>
         <label>英雄等级：<ChoicePicker key={`hero-level-${draft.level}`} label="英雄等级" value={draft.level} options={Array.from({ length: 50 }, (_, index) => index + 1)} onChange={(level) => setDraft({ ...draft, level })} /></label>
         <label>最大装备阶数：<strong className="parameter-readonly">{maxEquipmentTier(draft.level)}</strong></label>
@@ -827,15 +829,16 @@ function EquipmentModal({ hero, catalog, templates, onClose, onPrevious, onNext,
         if (name?.trim()) void onSaveTemplate(name.trim(), draft).then(() => setTransferStatus("模板已保存到 SQLite"));
       }}><PackageOpen size={15} />保存为模板</button></div>
       {transferStatus && <div className="transfer-status" role="status">{transferStatus}</div>}
-      <footer className="modal-footer auto-save-footer"><div className="modal-transfer"><button className="secondary-button" onClick={() => void copyLoadout()}><Clipboard size={15} />复制配装</button><button className="secondary-button" onClick={() => void pasteLoadout()}><Upload size={15} />粘贴导入</button></div><span>修改会自动计算并同步，无需另行保存</span></footer>
+      <footer className="modal-footer auto-save-footer"><div className="modal-transfer"><button className="secondary-button" onClick={() => void copyLoadout()}><Clipboard size={15} />复制配装</button><button className="secondary-button" onClick={() => void pasteLoadout()}><Upload size={15} />粘贴导入</button></div><span>修改会自动计算并同步，无需另行保存</span>{mobileInterface && <div className="mobile-editor-actions"><button className="zys-button violet" disabled={exportingImage} onClick={() => void exportImage()}>{exportingImage ? "导出中..." : "导出图片"}</button><button className="zys-button red" onClick={onClose}>关闭</button></div>}</footer>
     </section>
     {imagePreview && <ImageExportPreview title="英雄配装图片预览" dataUrl={imagePreview} filename={`英雄配装_${draft.className}_${Date.now()}`} onClose={() => setImagePreview(null)} onMessage={setTransferStatus} />}
-    <button className="equipment-hero-nav next" aria-label="下一个英雄" onClick={onNext}>›</button>
+    {!mobileInterface && <button className="equipment-hero-nav next" aria-label="下一个英雄" onClick={onNext}>›</button>}
   </div></EquipmentPreviewContext.Provider>;
 }
 
-function ChampionEquipmentModal({ champion, catalog, loadout, templates, onClose, onPrevious, onNext, onSave, onSaveTemplate }: {
+function ChampionEquipmentModal({ champion, catalog, loadout, templates, mobileInterface, onClose, onPrevious, onNext, onSave, onSaveTemplate }: {
   champion: Champion; catalog: Catalog; loadout?: ChampionLoadout | undefined; templates: BuildTemplate[]; onClose: () => void; onSave: (loadout: ChampionLoadout, sheet: CalculatedSheet) => void | Promise<void>;
+  mobileInterface: boolean;
   onPrevious: () => void; onNext: () => void;
   onSaveTemplate: (name: string, loadout: ChampionLoadout) => Promise<void>;
 }) {
@@ -996,11 +999,12 @@ function ChampionEquipmentModal({ champion, catalog, loadout, templates, onClose
     }
   };
   return <EquipmentPreviewContext.Provider value={championPreviewValue}><div className="modal-backdrop equipment-modal-backdrop champion-modal-backdrop" style={championModalStyle} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <button className="equipment-hero-nav previous" aria-label="上一个勇士" onClick={onPrevious}>‹</button>
+    {!mobileInterface && <button className="equipment-hero-nav previous" aria-label="上一个勇士" onClick={onPrevious}>‹</button>}
     <section className="modal champion-modal equipment-studio" role="dialog" aria-modal="true" aria-labelledby="champion-equipment-title">
-      <header className="modal-header"><div><h2 id="champion-equipment-title">勇士配装模拟 - {champion.name}</h2></div><div className="modal-header-actions"><button className="zys-button blue" onClick={() => void pasteLoadout()}>导入</button><input className="modal-import-code" aria-label="粘贴配置码" placeholder="粘贴配置码" value={importText} onChange={(event) => setImportText(event.target.value)} /><button className="zys-button violet" onClick={() => void copyLoadout()}>导出</button><button className="zys-button violet" disabled={exportingImage} onClick={() => void exportImage()}>{exportingImage ? "导出中..." : "导出图片"}</button><button className="zys-button red" onClick={onClose}>关闭</button></div></header>
+      <header className="modal-header"><div><h2 id="champion-equipment-title">勇士配装模拟 - {champion.name}</h2></div><div className="modal-header-actions"><button className="zys-button blue" onClick={() => void pasteLoadout()}>导入</button><input className="modal-import-code" aria-label="粘贴配置码" placeholder="粘贴配置码" value={importText} onChange={(event) => setImportText(event.target.value)} /><button className="zys-button violet" onClick={() => void copyLoadout()}>导出</button>{!mobileInterface && <><button className="zys-button violet desktop-editor-action" disabled={exportingImage} onClick={() => void exportImage()}>{exportingImage ? "导出中..." : "导出图片"}</button><button className="zys-button red desktop-editor-action" onClick={onClose}>关闭</button></>}</div></header>
       <div ref={exportSurfaceRef} className="editor-export-surface champion-export-surface">
       <div className="hero-parameter-bar champion-parameter-bar">
+        {mobileInterface && <div className="mobile-hero-switch" aria-label="切换勇士"><button type="button" aria-label="上一个勇士" onClick={onPrevious}>‹</button><button type="button" aria-label="下一个勇士" onClick={onNext}>›</button></div>}
         <div className="hero-identity champion-identity-card">
           <span className="champion-identity-avatar">
             <UnitAvatar unit={champion} />
@@ -1057,10 +1061,10 @@ function ChampionEquipmentModal({ champion, catalog, loadout, templates, onClose
         if (name?.trim()) void onSaveTemplate(name.trim(), draft).then(() => setTransferStatus("模板已保存到 SQLite"));
       }}><PackageOpen size={15} />保存为模板</button></div>
       {transferStatus && <div className="transfer-status" role="status">{transferStatus}</div>}
-      <footer className="modal-footer auto-save-footer"><div className="modal-transfer"><button className="secondary-button" onClick={() => void copyLoadout()}><Clipboard size={15} />复制配装</button><button className="secondary-button" onClick={() => void pasteLoadout()}><Upload size={15} />粘贴导入</button></div><span>修改会自动计算并同步，无需另行保存</span></footer>
+      <footer className="modal-footer auto-save-footer"><div className="modal-transfer"><button className="secondary-button" onClick={() => void copyLoadout()}><Clipboard size={15} />复制配装</button><button className="secondary-button" onClick={() => void pasteLoadout()}><Upload size={15} />粘贴导入</button></div><span>修改会自动计算并同步，无需另行保存</span>{mobileInterface && <div className="mobile-editor-actions"><button className="zys-button violet" disabled={exportingImage} onClick={() => void exportImage()}>{exportingImage ? "导出中..." : "导出图片"}</button><button className="zys-button red" onClick={onClose}>关闭</button></div>}</footer>
     </section>
     {imagePreview && <ImageExportPreview title="勇士配装图片预览" dataUrl={imagePreview} filename={`勇士配装_${champion.name}_${Date.now()}`} onClose={() => setImagePreview(null)} onMessage={setTransferStatus} />}
-    <button className="equipment-hero-nav next" aria-label="下一个勇士" onClick={onNext}>›</button>
+    {!mobileInterface && <button className="equipment-hero-nav next" aria-label="下一个勇士" onClick={onNext}>›</button>}
   </div></EquipmentPreviewContext.Provider>;
 }
 
@@ -1946,7 +1950,7 @@ function WorkspaceApp({ catalog, onCatalogChange }: { catalog: Catalog; onCatalo
         <section id="adventures-section" className="flow-section"><section className="section-heading"><div><h2>冒险任务 ({workspace.active.taskGroups.reduce((sum, group) => sum + group.tasks.length, 0)}/48)</h2><p>点击冒险任务卡片左上角冒险图标可以切换地图，拖动冒险任务卡片切换分组</p></div><button className="primary-button" disabled={workspace.active.taskGroups.reduce((sum, group) => sum + group.tasks.length, 0) >= 48} onClick={workspace.addGroup}>添加分组</button></section>{workspace.active.taskGroups.map((group) => <AdventureGroup key={group.id} systemId={workspace.active!.id} systemGameVersion={catalog.gameDataVersion} group={group} units={workspace.units} quests={catalog.quests} catalog={catalog} assignedUnitIds={[...new Set(group.tasks.flatMap((task) => task.memberIds))]} canAddTask={workspace.active!.taskGroups.reduce((sum, entry) => sum + entry.tasks.length, 0) < 48} onAddTask={(quest) => workspace.addTask(group.id, quest)} onDrop={(taskId, unitId) => workspace.dropUnit(group.id, taskId, unitId)} onMoveTask={(sourceGroupId, taskId, targetIndex) => workspace.moveTask(sourceGroupId, taskId, group.id, targetIndex)} onRemove={(taskId, unitId) => workspace.removeUnit(group.id, taskId, unitId)} onCopyTask={(task) => workspace.duplicateTask(group.id, task)} onDeleteTask={(taskId) => workspace.deleteTask(group.id, taskId)} onResult={workspace.setTaskResult} onTaskChange={(task) => workspace.updateTask(group.id, task)} />)}</section>
       </div></div>
     </main>}
-    {editingHero && <EquipmentModal key={editingHero.id} hero={editingHero} catalog={catalog} templates={templates} onClose={() => setEditingHero(null)} onPrevious={() => {
+    {editingHero && <EquipmentModal key={editingHero.id} hero={editingHero} catalog={catalog} templates={templates} mobileInterface={mobileInterface} onClose={() => setEditingHero(null)} onPrevious={() => {
       const heroList = workspace.active!.heroes;
       const currentIndex = heroList.findIndex((hero) => hero.id === editingHero.id);
       if (heroList.length) setEditingHero(heroList[(currentIndex - 1 + heroList.length) % heroList.length]!);
@@ -1960,7 +1964,7 @@ function WorkspaceApp({ catalog, onCatalogChange }: { catalog: Catalog; onCatalo
     }} onSave={(hero) => {
       workspace.updateHero(hero);
     }} onSaveTemplate={(name, hero) => saveBuildTemplate(name, hero.classId, "hero", hero)} />}
-    {editingChampion && <ChampionEquipmentModal key={editingChampion.id} champion={editingChampion} catalog={catalog} loadout={workspace.active.championLoadouts?.[editingChampion.id]} templates={templates} onClose={() => setEditingChampion(null)} onPrevious={() => {
+    {editingChampion && <ChampionEquipmentModal key={editingChampion.id} champion={editingChampion} catalog={catalog} loadout={workspace.active.championLoadouts?.[editingChampion.id]} templates={templates} mobileInterface={mobileInterface} onClose={() => setEditingChampion(null)} onPrevious={() => {
       const currentIndex = champions.findIndex((champion) => champion.id === editingChampion.id);
       if (champions.length) setEditingChampion(champions[(currentIndex - 1 + champions.length) % champions.length]!);
     }} onNext={() => {

@@ -475,6 +475,8 @@ body { background: #f3f5fa; }
   font-size:22px;
 }
 .equipment-studio .modal-header-actions { gap:8px; }
+.mobile-hero-switch,
+.mobile-editor-actions { display:none; }
 .equipment-studio .modal-import-code { width:205px; min-height:40px; }
 .equipment-studio .zys-button { min-height:40px; font-size:14px; }
 .editor-export-surface {
@@ -2596,149 +2598,356 @@ body.mobile-interface .champion-modal-backdrop > .champion-modal {
   height:100dvh !important;
   max-height:none;
   display:block !important;
-  overflow:auto;
+  overflow-x:hidden;
+  overflow-y:auto;
   border-radius:0;
   transform:none !important;
 }
 body.mobile-interface .equipment-studio > .modal-header,
 body.mobile-interface .champion-modal > .modal-header {
-  position:sticky;
+  position:relative;
   top:0;
   z-index:20;
   min-height:0;
   display:block;
   padding:calc(11px + env(safe-area-inset-top)) 12px 10px;
 }
-body.mobile-interface .equipment-studio .modal-header h2 { font-size:17px; }
-body.mobile-interface .equipment-studio .modal-header-actions {
+body.mobile-interface .equipment-studio .modal-header h2 { font-size:17px; text-align:center; }
+body.mobile-interface .equipment-studio:not(.champion-modal) .modal-header-actions {
   width:100%;
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:6px;
+  grid-template-columns:48px minmax(0,1fr) 50px 50px;
+  gap:5px;
   margin-top:9px;
 }
-body.mobile-interface .equipment-studio .modal-header-actions .modal-import-code {
-  grid-column:1/4;
+body.mobile-interface .equipment-studio:not(.champion-modal) .modal-header-actions .modal-import-code {
+  grid-column:auto;
   width:100%;
   min-width:0;
-  min-height:42px;
+  min-height:40px;
   font-size:14px;
 }
-body.mobile-interface .equipment-studio .modal-header-actions .zys-button {
+body.mobile-interface .equipment-studio:not(.champion-modal) .modal-header-actions .zys-button {
   min-width:0;
   min-height:40px;
   padding:6px 4px;
   font-size:11px;
 }
+body.mobile-interface .equipment-studio:not(.champion-modal) .modal-header-actions .desktop-editor-action { display:none; }
+body.mobile-interface .champion-modal .modal-header-actions {
+  width:100%;
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) 50px;
+  gap:5px;
+  margin-top:9px;
+}
+body.mobile-interface .champion-modal .modal-header-actions .modal-import-code {
+  grid-column:auto;
+  width:100%;
+  min-width:0;
+  min-height:40px;
+  font-size:14px;
+}
+body.mobile-interface .champion-modal .modal-header-actions .zys-button {
+  min-width:0;
+  min-height:40px;
+  padding:6px 4px;
+  font-size:11px;
+}
+body.mobile-interface .champion-modal .modal-header-actions .desktop-editor-action { display:none; }
 body.mobile-interface .editor-export-surface,
 body.mobile-interface .champion-export-surface {
   display:block !important;
   height:auto !important;
   overflow:visible !important;
 }
-body.mobile-interface .editor-export-surface > .hero-parameter-bar,
-body.mobile-interface .champion-export-surface > .champion-parameter-bar {
+body.mobile-interface .editor-export-surface > .hero-parameter-bar {
   min-height:0;
   display:grid !important;
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-  grid-template-rows:auto !important;
-  gap:8px;
-  padding:14px 12px;
+  grid-template-columns:minmax(84px,104px) minmax(0,1fr) !important;
+  grid-template-rows:repeat(4,38px) !important;
+  gap:5px 10px;
+  padding:13px 38px 11px;
+  position:relative;
 }
-body.mobile-interface .hero-parameter-bar .hero-identity,
-body.mobile-interface .champion-parameter-bar .champion-identity-card {
-  grid-column:1/-1;
-  grid-row:auto;
-  min-height:70px;
-  flex-direction:row;
+body.mobile-interface .hero-parameter-bar .hero-identity {
+  grid-column:1;
+  grid-row:1/-1;
+  min-height:0;
+  flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
-  gap:10px;
-  padding:0 0 10px;
+  justify-content:center;
+  gap:6px;
+  padding:0;
   border-right:0;
-  border-bottom:1px solid #ece9e3;
+  border-bottom:0;
 }
-body.mobile-interface .hero-parameter-bar > label,
-body.mobile-interface .champion-parameter-bar > label {
+body.mobile-interface .hero-parameter-bar > label {
+  grid-column:2;
   min-width:0;
-  min-height:44px;
+  min-height:38px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:6px;
-  padding:5px 7px;
-  border:1px solid #ececf1;
-  border-radius:9px;
-  background:#fff;
-  font-size:10px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  font-size:12px;
+  white-space:nowrap;
 }
-body.mobile-interface .hero-parameter-bar .choice-picker > button,
+body.mobile-interface .hero-parameter-bar .choice-picker > button {
+  width:58px;
+  min-width:58px;
+  min-height:32px;
+  font-size:15px;
+}
+body.mobile-interface .hero-parameter-bar .parameter-readonly {
+  width:58px;
+  min-width:58px;
+  min-height:32px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid #e0dce1;
+  border-radius:5px;
+  background:#fafafa;
+  font-size:15px;
+}
+body.mobile-interface .champion-export-surface > .champion-parameter-bar {
+  min-height:0;
+  display:grid !important;
+  grid-template-columns:minmax(84px,104px) minmax(0,1fr) !important;
+  grid-template-rows:repeat(6,38px) !important;
+  gap:5px 10px;
+  padding:13px 38px 11px;
+  position:relative;
+}
+body.mobile-interface .champion-parameter-bar .champion-identity-card {
+  grid-column:1;
+  grid-row:1/-1;
+  width:100%;
+  min-width:0;
+  min-height:0;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:0;
+  border-right:0;
+  border-bottom:0;
+}
+body.mobile-interface .champion-parameter-bar > label {
+  grid-column:2;
+  min-width:0;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  font-size:12px;
+  white-space:nowrap;
+}
 body.mobile-interface .champion-parameter-bar .choice-picker > button,
 body.mobile-interface .champion-parameter-bar .parameter-readonly {
-  min-width:52px;
-  min-height:34px;
+  width:58px;
+  min-width:58px;
+  min-height:32px;
+  font-size:15px;
+}
+body.mobile-interface .champion-modal .champion-parameter-bar .titan-toggle { justify-content:space-between; }
+body.mobile-interface .equipment-studio .hero-identity .unit-avatar {
+  width:82px;
+  height:82px;
+}
+body.mobile-interface .equipment-studio .hero-name-editor {
+  width:104px;
+  min-width:0;
+  max-width:100%;
+}
+body.mobile-interface .equipment-studio .hero-name-editor button,
+body.mobile-interface .equipment-studio .hero-name-editor input {
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  min-height:32px;
+  padding:3px 5px;
+  border-radius:5px;
+  font-size:15px;
+}
+body.mobile-interface .hero-parameter-bar .hero-identity { width:100%; min-width:0; }
+body.mobile-interface .mobile-hero-switch {
+  position:absolute;
+  inset:0;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 8px;
+  pointer-events:none;
+}
+body.mobile-interface .mobile-hero-switch button {
+  width:32px;
+  height:54px;
+  padding:0;
+  color:#16151a;
+  border:0;
+  background:transparent;
+  font-size:48px;
+  font-weight:400;
+  line-height:1;
+  pointer-events:auto;
 }
 body.mobile-interface .hero-skill-stage {
   display:block;
-  padding:14px 12px;
+  padding:10px 12px 8px;
+  border-top:1px solid #edf0f4;
+  border-bottom:1px solid #dfe4ea;
 }
 body.mobile-interface .hero-skill-slots {
-  justify-content:flex-start;
-  overflow-x:auto;
-  padding:4px 2px 10px;
-  scrollbar-width:none;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(54px,1fr));
+  gap:4px;
+  overflow:visible;
+  padding:2px 0 7px;
 }
-body.mobile-interface .hero-skill-slots::-webkit-scrollbar { display:none; }
-body.mobile-interface .hero-skill-card { flex:0 0 78px; }
+body.mobile-interface .hero-skill-card {
+  width:auto;
+  min-width:0;
+  min-height:78px;
+  padding:2px;
+}
+body.mobile-interface .equipment-studio .hero-skill-card .skill-art {
+  width:min(62px,15vw);
+  height:min(62px,15vw);
+  flex-basis:min(62px,15vw);
+}
+body.mobile-interface .equipment-studio .hero-skill-card strong { font-size:10px; }
 body.mobile-interface .hero-skill-stage .innate-effect { margin-top:8px; }
-body.mobile-interface .equipment-studio .equipment-overview,
-body.mobile-interface .editor-export-surface > .equipment-overview,
+body.mobile-interface .equipment-studio:not(.champion-modal) .equipment-overview,
+body.mobile-interface .editor-export-surface > .equipment-overview {
+  width:100%;
+  height:auto !important;
+  min-height:0 !important;
+  display:flex !important;
+  flex-direction:column;
+  padding:0 12px 18px !important;
+  background:#f8fbff;
+}
+body.mobile-interface .equipment-studio .overview-stats {
+  order:2;
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0 10px;
+  padding:8px 2px 6px;
+  border-right:0;
+}
+body.mobile-interface .equipment-studio .overview-stats .workbench-title {
+  grid-column:1/-1;
+  min-height:48px;
+}
+body.mobile-interface .equipment-studio .overview-stats .live-stat {
+  min-width:0;
+  min-height:38px;
+  padding:0 4px;
+}
+body.mobile-interface .equipment-studio .live-stat > span {
+  min-width:0;
+  gap:4px;
+  font-size:13px;
+}
+body.mobile-interface .equipment-studio .live-stat > span img,
+body.mobile-interface .equipment-studio .live-stat > span .asset-fallback {
+  width:22px;
+  height:22px;
+  flex-basis:22px;
+}
+body.mobile-interface .equipment-studio .live-stat > strong { font-size:15px; }
+body.mobile-interface .equipment-studio .overview-stats .sheet-issues,
+body.mobile-interface .equipment-studio .overview-stats .sheet-valid { grid-column:1/-1; }
+body.mobile-interface .equipment-studio:not(.champion-modal) .equipment-slot-stage {
+  order:1;
+  padding:18px 0 10px;
+  border-top:0;
+  border-bottom:1px solid #dfe4ea;
+  border-left:0;
+}
+body.mobile-interface .equipment-studio:not(.champion-modal) .equipment-slot-grid {
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:14px 6px !important;
+  margin-top:0 !important;
+}
+body.mobile-interface .champion-modal .champion-slot-grid {
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:18px !important;
+  max-width:320px;
+  margin:0 auto !important;
+}
+body.mobile-interface .equipment-studio:not(.champion-modal) .overview-slot {
+  width:auto !important;
+  min-width:0;
+  min-height:137px;
+}
+body.mobile-interface .equipment-studio:not(.champion-modal) .overview-slot-art {
+  width:min(104px,27vw) !important;
+  height:min(104px,27vw) !important;
+}
+body.mobile-interface .equipment-studio:not(.champion-modal) .overview-slot strong { max-width:100%; font-size:11px; }
+body.mobile-interface .equipment-studio:not(.champion-modal) .overview-slot small { font-size:9px; }
 body.mobile-interface .champion-export-surface > .champion-overview {
   width:100%;
   height:auto !important;
   min-height:0 !important;
-  display:block !important;
-  padding:10px 12px 18px !important;
+  display:flex !important;
+  flex-direction:column;
+  padding:0 12px 18px !important;
+  background:#f8fbff;
 }
-body.mobile-interface .equipment-studio .overview-stats {
-  display:block !important;
-  padding:8px 2px 14px;
-  border-right:0;
-}
-body.mobile-interface .equipment-studio .equipment-slot-stage {
-  padding:16px 0 0;
-  border-top:1px solid #e7e8ee;
+body.mobile-interface .champion-modal .equipment-slot-stage {
+  order:1;
+  padding:18px 0 12px;
+  border-top:0;
+  border-bottom:1px solid #dfe4ea;
   border-left:0;
 }
-body.mobile-interface .equipment-studio .equipment-slot-grid,
-body.mobile-interface .champion-modal .champion-slot-grid {
-  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-  gap:12px 4px !important;
-  margin-top:8px !important;
-}
-body.mobile-interface .champion-modal .champion-slot-grid {
-  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-}
-body.mobile-interface .equipment-studio .overview-slot,
 body.mobile-interface .champion-modal .champion-slot {
   width:auto !important;
   min-width:0;
-  min-height:112px;
+  min-height:170px;
 }
-body.mobile-interface .equipment-studio .overview-slot-art,
 body.mobile-interface .champion-modal .champion-slot .overview-slot-art {
-  width:78px !important;
-  height:78px !important;
+  width:min(138px,36vw) !important;
+  height:min(138px,36vw) !important;
 }
 body.mobile-interface .champion-team-skill {
   min-height:0;
-  padding:14px 16px;
+  padding:10px 16px;
   border-top:1px solid #ece8e5;
   border-bottom:1px solid #ece8e5;
 }
 body.mobile-interface .champion-identity-avatar,
-body.mobile-interface .champion-identity-avatar .unit-avatar { width:64px; height:64px; }
-body.mobile-interface .champion-identity-card > strong { font-size:15px; }
+body.mobile-interface .champion-identity-avatar .unit-avatar { width:82px; height:82px; }
+body.mobile-interface .champion-identity-card > strong {
+  width:100%;
+  min-height:32px;
+  display:grid;
+  place-items:center;
+  padding:3px 5px;
+  overflow:hidden;
+  color:#fff;
+  border-radius:5px;
+  background:#6d3e57;
+  font-size:15px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+body.mobile-interface .champion-identity-card > small,
+body.mobile-interface .champion-parameter-bar > label > small { display:none; }
 body.mobile-interface .template-row { padding:10px 12px; }
 body.mobile-interface .template-row label { min-width:0; }
 body.mobile-interface .template-row select { width:100%; min-height:42px; }
@@ -2748,8 +2957,20 @@ body.mobile-interface .auto-save-footer {
   display:block;
   padding:10px 12px calc(18px + env(safe-area-inset-bottom));
 }
-body.mobile-interface .auto-save-footer .modal-transfer { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
-body.mobile-interface .auto-save-footer > span { display:block; margin-top:8px; text-align:center; font-size:10px; }
+body.mobile-interface .equipment-studio .auto-save-footer .modal-transfer,
+body.mobile-interface .equipment-studio .auto-save-footer > span { display:none; }
+body.mobile-interface .mobile-editor-actions {
+  display:grid;
+  grid-template-columns:1.2fr .9fr;
+  gap:10px;
+  max-width:300px;
+  margin:0 auto;
+}
+body.mobile-interface .mobile-editor-actions .zys-button {
+  min-height:46px;
+  border-radius:10px;
+  font-size:15px;
+}
 
 body.mobile-interface .equipment-picker-dialog {
   width:100%;
