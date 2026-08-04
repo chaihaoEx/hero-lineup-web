@@ -118,9 +118,11 @@ jobs:
       - name: Verify production
         run: |
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' https://vst2t.i7yun.top/)" = "302"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' https://cq.i7yun.cn/)" = "302"
           curl --fail --silent --show-error https://vst2t.i7yun.top/sw.js |
             grep --quiet 'hero-lineup-root-worker-retired-v1'
           curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/hero-lineup/ >/dev/null
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 https://cq.i7yun.cn/hero-lineup/ >/dev/null
           curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/hero-lineup/content/manifest.json |
             node -e "let value=''; process.stdin.on('data', chunk => value += chunk); process.stdin.on('end', () => JSON.parse(value))"
           curl --fail --silent --show-error --compressed --head \

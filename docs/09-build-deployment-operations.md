@@ -35,6 +35,7 @@ VITE_APP_VERSION
 
 ```text
 vst2t.i7yun.top
+cq.i7yun.cn
 ```
 
 当前生产发布目录：
@@ -51,7 +52,7 @@ vst2t.i7yun.top
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2 ipv6only=on;
-    server_name vst2t.i7yun.top;
+    server_name vst2t.i7yun.top cq.i7yun.cn;
 
     root /var/www;
     index index.html;
@@ -170,7 +171,7 @@ server {
 
 ```bash
 apt install -y certbot python3-certbot-nginx
-certbot --nginx -d vst2t.i7yun.top
+certbot --nginx -d vst2t.i7yun.top -d cq.i7yun.cn
 ```
 
 ## 5. 发布方式
