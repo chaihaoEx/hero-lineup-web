@@ -117,8 +117,16 @@ jobs:
           '
       - name: Verify production
         run: |
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' https://vst2t.i7yun.top/)" = "302"
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' https://cq.i7yun.cn/)" = "302"
+          assert_status() {
+            expected="$1"
+            url="$2"
+            actual="$(curl --silent --show-error --retry 5 --retry-all-errors --retry-delay 2 \
+              --output /dev/null --write-out '%{http_code}' "$url")"
+            echo "$url expected=$expected actual=$actual"
+            test "$actual" = "$expected"
+          }
+          assert_status 302 https://vst2t.i7yun.top/
+          assert_status 302 https://cq.i7yun.cn/
           curl --fail --silent --show-error https://vst2t.i7yun.top/sw.js |
             grep --quiet 'hero-lineup-root-worker-retired-v1'
           curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/hero-lineup/ >/dev/null
