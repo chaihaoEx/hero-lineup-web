@@ -73,7 +73,7 @@ tests/App.test.tsx
 - 根路径 `/sw.js` 只提供旧根作用域 Worker 的退役脚本；它会注销旧注册并清理旧根缓存，防止历史客户端截获 `/issues/`。
 - E2E 阻止远程请求，证明核心工作流不依赖外网接口。
 - GitHub Actions 在不安装 Rust 的 Ubuntu 环境完成校验、构建和部署。
-- `main` 构建上传到 commit SHA 版本目录，通过软链接原子发布到 `https://vst2t.i7yun.top/hero-lineup/`；`/issues/` 独立反向代理到 Gitea，根目录只负责跳转。
+- `main` 构建上传到 commit SHA 版本目录，通过软链接原子发布到 `https://cq.i7yun.cn/hero-lineup/`；`/issues/` 独立反向代理到 Gitea，根目录只负责跳转。
 
 本地完整门禁：
 

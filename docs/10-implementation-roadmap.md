@@ -154,7 +154,7 @@
 - 配置 GitHub Actions。
 - 配置版本化发布。
 - 配置 HTTPS。
-- 部署到 `vst2t.i7yun.top`。
+- 部署到 `cq.i7yun.cn`。
 - 增加部署后冒烟检查。
 
 验收：

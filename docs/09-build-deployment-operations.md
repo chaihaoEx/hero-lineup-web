@@ -31,10 +31,9 @@ VITE_APP_VERSION
 
 ## 3. Nginx
 
-当前测试域名：
+当前生产域名：
 
 ```text
-vst2t.i7yun.top
 cq.i7yun.cn
 ```
 
@@ -46,13 +45,14 @@ cq.i7yun.cn
 /var/www/hero-lineup -> /var/www/hero-lineup-web-current
 ```
 
-实际配置由 [`ops/nginx/hero-lineup-web.conf`](../ops/nginx/hero-lineup-web.conf) 版本化，并由部署流水线在发布前执行 `nginx -t` 后加载。关键路径配置如下：
+实际配置由 [`ops/nginx/hero-lineup-web.conf`](../ops/nginx/hero-lineup-web.conf) 版本化，部署到 Alibaba Cloud Linux 的 `/etc/nginx/conf.d/hero-lineup-web.conf`，并由部署流水线在发布前执行 `nginx -t` 后加载。关键路径配置如下：
 
 ```nginx
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2 ipv6only=on;
-    server_name vst2t.i7yun.top cq.i7yun.cn;
+    listen 443 ssl;
+    listen [::]:443 ssl ipv6only=on;
+    http2 on;
+    server_name cq.i7yun.cn;
 
     root /var/www;
     index index.html;
@@ -171,7 +171,7 @@ server {
 
 ```bash
 apt install -y certbot python3-certbot-nginx
-certbot --nginx -d vst2t.i7yun.top -d cq.i7yun.cn
+certbot --nginx -d cq.i7yun.cn
 ```
 
 ## 5. 发布方式

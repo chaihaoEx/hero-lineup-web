@@ -56,7 +56,7 @@ jobs:
     timeout-minutes: 10
     environment:
       name: production
-      url: https://vst2t.i7yun.top/hero-lineup/
+      url: https://cq.i7yun.cn/hero-lineup/
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -103,8 +103,8 @@ jobs:
             "$DEPLOY_USER@$DEPLOY_HOST:/tmp/hero-lineup-root-sw-retire.js"
           ssh -i ~/.ssh/hero_lineup_deploy "$DEPLOY_USER@$DEPLOY_HOST" '
             set -e
-            target=/etc/nginx/sites-available/hero-lineup-web
-            backup=/etc/nginx/sites-available/hero-lineup-web.ci-backup
+            target=/etc/nginx/conf.d/hero-lineup-web.conf
+            backup=/etc/nginx/conf.d/hero-lineup-web.conf.ci-backup
             cp "$target" "$backup"
             install -m 644 /tmp/hero-lineup-root-sw-retire.js /var/www/hero-lineup-root-sw-retire.js
             install -m 644 /tmp/hero-lineup-web.conf "$target"
@@ -128,21 +128,19 @@ jobs:
           verify_dir="$(mktemp -d)"
           trap 'rm -rf "$verify_dir"' EXIT
 
-          assert_status 302 https://vst2t.i7yun.top/
           assert_status 302 https://cq.i7yun.cn/
 
           echo "Verifying retired root service worker"
           curl --fail --silent --show-error --retry 5 --retry-all-errors --retry-delay 2 \
-            --output "$verify_dir/sw.js" https://vst2t.i7yun.top/sw.js
+            --output "$verify_dir/sw.js" https://cq.i7yun.cn/sw.js
           grep --quiet 'hero-lineup-root-worker-retired-v1' "$verify_dir/sw.js"
 
-          echo "Verifying both application aliases"
-          curl --fail --silent --show-error --retry 5 --retry-delay 2 https://vst2t.i7yun.top/hero-lineup/ >/dev/null
+          echo "Verifying application"
           curl --fail --silent --show-error --retry 5 --retry-delay 2 https://cq.i7yun.cn/hero-lineup/ >/dev/null
 
           echo "Verifying content manifest"
           curl --fail --silent --show-error --retry 5 --retry-delay 2 \
-            --output "$verify_dir/manifest.json" https://vst2t.i7yun.top/hero-lineup/content/manifest.json
+            --output "$verify_dir/manifest.json" https://cq.i7yun.cn/hero-lineup/content/manifest.json
           node -e "JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8'))" "$verify_dir/manifest.json"
 
           echo "Verifying static data compression"
@@ -150,7 +148,7 @@ jobs:
           for attempt in 1 2 3 4 5 6; do
             curl --fail --silent --show-error --compressed --head \
               --dump-header "$verify_dir/items.headers" --output /dev/null \
-              https://vst2t.i7yun.top/hero-lineup/content/TextAsset/items.json
+              https://cq.i7yun.cn/hero-lineup/content/TextAsset/items.json
             if grep --ignore-case --extended-regexp --quiet \
               '^content-encoding: (gzip|br)' "$verify_dir/items.headers"; then
               compression_ready=true
@@ -166,8 +164,8 @@ jobs:
 
           echo "Verifying HTTP/2"
           test "$(curl --fail --silent --show-error --output /dev/null --write-out '%{http_version}' \
-            https://vst2t.i7yun.top/hero-lineup/)" = "2"
+            https://cq.i7yun.cn/hero-lineup/)" = "2"
 
           echo "Verifying issue tracker"
           curl --fail --silent --show-error --retry 5 --retry-delay 2 \
-            https://vst2t.i7yun.top/issues/chaihao/hero-lineup-feedback/issues >/dev/null
+            https://cq.i7yun.cn/issues/chaihao/hero-lineup-feedback/issues >/dev/null
