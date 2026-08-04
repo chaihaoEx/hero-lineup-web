@@ -152,7 +152,7 @@ jobs:
               --dump-header "$verify_dir/items.headers" --output /dev/null \
               https://vst2t.i7yun.top/hero-lineup/content/TextAsset/items.json
             if grep --ignore-case --extended-regexp --quiet \
-              '^content-encoding: (gzip|br)\r?$' "$verify_dir/items.headers"; then
+              '^content-encoding: (gzip|br)' "$verify_dir/items.headers"; then
               compression_ready=true
               break
             fi
